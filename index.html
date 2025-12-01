@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Race Strategy Console v2.2</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Set up Tailwind configuration for a sleek, aggressive theme and Inter font -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'racer-dark': '#0a0a0a', // Deep black background
+                        'racer-accent': '#e53e3e', // Aggressive Racing Red
+                        'racer-light': '#fefefe',
+                        'racer-secondary': '#161616', // Darker container base
+                        'racer-border': '#333333',
+                    }
+                },
+            }
+        }
+    </script>
+    <style>
+        /* Custom CSS for Carbon Fiber and Digital Effects */
+        .carbon-fiber-bg {
+            /* Simulates a subtle carbon fiber weave */
+            background-color: #1c1c1c; 
+            background-image: 
+                radial-gradient(circle at 100% 150%, #2b2b2b 24%, #1a1a1a 25%, #1a1a1a 28%, #2b2b2b 29%, #2b2b2b 36%, #1a1a1a 37%, #1a1a1a 40%, rgba(255,255,255,0) 41%),
+                radial-gradient(circle at 0 150%, #2b2b2b 24%, #1a1a1a 25%, #1a1a1a 28%, #2b2b2b 29%, #2b2b2b 36%, #1a1a1a 37%, #1a1a1a 40%, rgba(255,255,255,0) 41%),
+                radial-gradient(circle at 50% 100%, #1a1a1a 10%, #2b2b2b 23%, #333333 24%, #1a1a1a 25%, #1a1a1a 34%, #333333 35%, #2b2b2b 36%, #1a1a1a 40%),
+                radial-gradient(circle at 100% 50%, #333333 5%, #2b2b2b 10%, #1a1a1a 15%, #1a1a1a 20%),
+                radial-gradient(circle at 0 50%, #333333 5%, #2b2b2b 10%, #1a1a1a 15%, #1a1a1a 20%);
+            background-size: 50px 50px;
+        }
+
+        .digital-readout {
+            /* Monospace font for a clean, digital look */
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        .tab-button {
+            transition: all 0.2s ease-in-out;
+            position: relative;
+        }
+        .tab-button.active {
+            color: var(--tw-colors-racer-accent);
+        }
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background-color: var(--tw-colors-racer-accent);
+            box-shadow: 0 0 8px rgba(229, 62, 62, 0.7); /* Subtle glow */
+            border-radius: 9999px 9999px 0 0;
+        }
+        input[type="number"], select {
+            border: 1px solid var(--tw-colors-racer-border);
+            background-color: #2b2b2b;
+            color: var(--tw-colors-racer-light);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input[type="number"]:focus, select:focus {
+            border-color: var(--tw-colors-racer-accent);
+            box-shadow: 0 0 0 1px var(--tw-colors-racer-accent), 0 0 5px rgba(229, 62, 62, 0.5);
+        }
+        .form-input {
+            padding: 0.75rem; /* p-3 */
+            font-size: 1rem;
+            min-height: 48px; /* Touch target minimum */
+        }
+        .result-box {
+            background-color: #1a1a1a;
+            border: 1px solid #333333;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+        .action-button {
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+            box-shadow: 0 4px 15px rgba(229, 62, 62, 0.4);
+        }
+        .pit-table-header {
+            background-color: #2b2b2b;
+            color: #ccc;
+        }
+        .pit-table-row:nth-child(even) {
+            background-color: #1a1a1a;
+        }
+        .pit-table-row:nth-child(odd) {
+            background-color: #121212;
+        }
+        /* Mobile table adaptation */
+        @media (max-width: 1023px) {
+            .pit-table-row {
+                display: block;
+                border-bottom: 1px solid #333;
+                padding: 0.75rem 0;
+            }
+            .pit-table-row > div {
+                display: flex;
+                justify-content: space-between;
+                padding: 0.25rem 1rem;
+                border-bottom: 1px dotted #1a1a1a;
+            }
+            .pit-table-row > div:before {
+                content: attr(data-label);
+                font-weight: bold;
+                color: #e53e3e;
+                margin-right: 1rem;
+                text-transform: uppercase;
+                font-size: 0.75rem;
+            }
+            .pit-table-header {
+                display: none; /* Hide standard header on mobile */
+            }
+        }
+    </style>
+</head>
+<body class="bg-racer-dark text-racer-light font-sans min-h-screen p-4 sm:p-8">
+
+    <div class="max-w-6xl mx-auto carbon-fiber-bg p-6 sm:p-10 rounded-2xl shadow-2xl border border-racer-accent">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-racer-light tracking-widest uppercase">
+                <span class="text-racer-accent">RACE</span> CONTROL SYSTEM
+            </h1>
+            <p class="text-gray-500 mt-2 text-sm sm:text-base digital-readout">ENDURANCE STRATEGY MODULE ACTIVE</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <div class="flex space-x-2 sm:space-x-8 mb-8 border-b border-racer-border">
+            <button id="tab-strategy" onclick="showTab('strategy')" class="tab-button px-2 sm:px-6 py-3 text-base sm:text-lg font-bold text-racer-accent active uppercase">Strategy Planner</button>
+            <button id="tab-fuel" onclick="showTab('fuel')" class="tab-button px-2 sm:px-6 py-3 text-base sm:text-lg font-bold text-racer-light hover:text-racer-accent uppercase">Fuel Calculator</button>
+            <button id="tab-setup" onclick="showTab('setup')" class="tab-button px-2 sm:px-6 py-3 text-base sm:text-lg font-bold text-racer-light hover:text-racer-accent uppercase">Setup Advisor</button>
+        </div>
+
+        <!-- Content Containers -->
+
+        <!-- 1. Endurance Strategy Calculator -->
+        <div id="strategy" class="tool-content">
+            <h2 class="text-2xl font-bold mb-6 text-racer-accent border-b border-racer-border pb-2">Endurance Race Planner</h2>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- A. Input Panel -->
+                <div class="lg:col-span-2 space-y-6 p-6 rounded-xl border border-racer-border bg-racer-secondary">
+                    <h3 class="text-xl font-bold text-racer-light border-b border-gray-600 pb-2">Race Parameters</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Group 1: Race & Performance -->
+                        <div class="col-span-2 sm:col-span-1 space-y-4">
+                            <label class="block text-sm font-medium text-gray-400">Race Duration</label>
+                            <div class="flex space-x-2">
+                                <input type="number" id="raceDurationHrs" value="1" min="0" class="form-input rounded-lg w-1/2" placeholder="Hours">
+                                <input type="number" id="raceDurationMins" value="0" min="0" max="59" class="form-input rounded-lg w-1/2" placeholder="Minutes">
+                            </div>
+                            <div class="flex flex-col">
+                                <label for="lapTime" class="text-sm font-medium mb-1 text-gray-400">Average Lap Time (Seconds)</label>
+                                <input type="number" id="lapTime" value="90.0" min="10" step="0.1" class="form-input rounded-lg" placeholder="e.g., 90.5">
+                            </div>
+                        </div>
+
+                        <!-- Group 2: Driver & Tire Constraints -->
+                        <div class="col-span-2 sm:col-span-1 space-y-4">
+                            <div class="flex flex-col">
+                                <label for="numDrivers" class="text-sm font-medium mb-1 text-gray-400">Total Drivers in Team</label>
+                                <input type="number" id="numDrivers" value="2" min="1" class="form-input rounded-lg" placeholder="e.g., 2">
+                            </div>
+                            <div class="flex flex-col">
+                                <label for="maxDriverStintMins" class="text-sm font-medium mb-1 text-gray-400">Max Driver Stint (Minutes)</label>
+                                <input type="number" id="maxDriverStintMins" value="65" min="1" class="form-input rounded-lg" placeholder="e.g., 65 (Regulation Limit)">
+                            </div>
+                            <div class="flex flex-col">
+                                <label for="maxTireStintLaps" class="text-sm font-medium mb-1 text-gray-400">Max Tire Stint (Laps)</label>
+                                <input type="number" id="maxTireStintLaps" value="30" min="1" class="form-input rounded-lg" placeholder="e.g., 30 (Wear Limit)">
+                            </div>
+                        </div>
+
+                         <!-- Group 3: Fuel Constraints -->
+                        <div class="col-span-2 space-y-4 pt-4 border-t border-racer-border">
+                            <h4 class="text-lg font-medium text-gray-300">Fuel Management</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div class="flex flex-col">
+                                    <label for="fuelPerLap" class="text-sm font-medium mb-1 text-gray-400">Consumption (Liters/Lap)</label>
+                                    <input type="number" id="fuelPerLap" value="3.5" min="0.1" step="0.1" class="form-input rounded-lg" placeholder="3.5 L/Lap">
+                                </div>
+                                <div class="flex flex-col">
+                                    <label for="tankCapacity" class="text-sm font-medium mb-1 text-gray-400">Tank Capacity (Liters)</label>
+                                    <input type="number" id="tankCapacity" value="100" min="10" step="1" class="form-input rounded-lg" placeholder="100 L">
+                                </div>
+                                <div class="flex flex-col">
+                                    <label for="fuelSafetyLiters" class="text-sm font-medium mb-1 text-gray-400">Safety Margin (Liters)</label>
+                                    <input type="number" id="fuelSafetyLiters" value="1.0" min="0" step="0.1" class="form-input rounded-lg" placeholder="1.0 L">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="calculateEndurance()" class="action-button w-full bg-racer-accent text-racer-light font-extrabold py-3 rounded-lg hover:bg-red-700 transition duration-300 shadow-lg mt-6 text-xl uppercase">
+                        Generate Strategy
+                    </button>
+                </div>
+
+                <!-- B. Summary Results Panel -->
+                <div class="lg:col-span-1 p-6 rounded-xl border border-racer-accent bg-racer-secondary space-y-4">
+                    <h3 class="text-xl font-bold text-racer-accent border-b border-gray-600 pb-2">Strategy Summary</h3>
+                    <div id="endurance-results-summary" class="space-y-4">
+                        <div class="result-box p-4 rounded-lg">
+                            <p class="text-sm text-gray-400 digital-readout">TOTAL RACE / LAPS</p>
+                            <p class="text-xl font-bold text-racer-light digital-readout"><span id="res-totalTime">0:00:00</span> / <span id="res-totalLaps">0</span></p>
+                            <p class="text-sm text-gray-400 digital-readout">FUEL REQ: <span id="res-totalFuel" class="text-racer-accent">0.0 L</span></p>
+                        </div>
+                        
+                        <div class="result-box p-4 rounded-lg">
+                            <p class="text-sm font-bold text-gray-400 digital-readout">OPTIMAL STINT LENGTH</p>
+                            <p class="text-2xl font-extrabold text-racer-light mt-1 digital-readout"><span id="res-maxStintLaps">0</span> Laps</p>
+                            <p class="text-sm text-gray-400 digital-readout">Time: <span class="font-mono" id="res-maxStintTime">0:00:00</span> (Limiter: <span id="res-limitingFactor" class="text-racer-accent uppercase">--</span>)</p>
+                            <ul id="res-constraint-details" class="text-xs text-gray-500 mt-2 space-y-1">
+                                <li>- Fuel Limit: 0 Laps</li>
+                                <li>- Driver Limit: 0 Laps</li>
+                                <li>- Tire Max: N/A</li>
+                            </ul>
+                        </div>
+
+                        <div class="result-box p-4 rounded-lg">
+                            <p class="text-sm font-bold text-gray-400 digital-readout">DRIVER & PIT MANAGEMENT</p>
+                            <p class="text-2xl font-extrabold text-racer-accent mt-1 digital-readout"><span id="res-pitStops">0</span> STOPS TOTAL</p>
+                            <p class="text-sm text-gray-400 digital-readout">Total Stints: <span class="font-mono" id="res-totalStints">0</span></p>
+                            <p class="text-sm text-gray-400 digital-readout">Stints Per Driver: <span class="font-mono" id="res-stintsPerDriver">0.0</span></p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- C. Detailed Pit Stop Breakdown Table -->
+            <div class="mt-10">
+                <h3 class="text-xl font-bold mb-4 text-racer-accent border-b border-racer-border pb-2">Pit Stop Sequence</h3>
+                <div id="pit-stop-details-container" class="border border-racer-border rounded-lg overflow-x-auto">
+                    <!-- Table content generated by JavaScript -->
+                    <p class="p-4 text-gray-400 digital-readout">Click 'Generate Strategy' to see the pit stop plan.</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 2. Simple Fuel Calculator -->
+        <div id="fuel" class="tool-content hidden">
+            <h2 class="text-2xl font-bold mb-6 text-racer-accent border-b border-racer-border pb-2">Simple Fuel Calculator</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                <!-- Inputs -->
+                <div class="md:col-span-2 space-y-4 p-6 rounded-xl border border-racer-border bg-racer-secondary">
+                    <!-- Toggle between Laps and Time -->
+                    <div class="flex items-center space-x-4 mb-4">
+                        <span class="text-gray-400 font-medium">CALCULATE FUEL BY:</span>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="fuel_mode" value="laps" checked class="form-radio text-racer-accent" onchange="toggleFuelMode('laps')">
+                            <span class="ml-2 text-racer-light">LAPS</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="fuel_mode" value="time" class="form-radio text-racer-accent" onchange="toggleFuelMode('time')">
+                            <span class="ml-2 text-racer-light">TIME</span>
+                        </label>
+                    </div>
+
+                    <div id="fuel_input_laps" class="space-y-4">
+                        <div class="flex flex-col">
+                            <label for="fuel_laps" class="text-sm font-medium mb-1 text-gray-400">Laps to Complete</label>
+                            <input type="number" id="fuel_laps" value="10" min="1" class="form-input rounded-lg digital-readout" placeholder="e.g., 10">
+                        </div>
+                    </div>
+
+                    <div id="fuel_input_time" class="space-y-4 hidden">
+                         <label class="block text-sm font-medium text-gray-400">Target Time</label>
+                            <div class="flex space-x-2">
+                                <input type="number" id="fuel_time_hrs" value="0" min="0" class="form-input rounded-lg w-1/2 digital-readout" placeholder="Hours">
+                                <input type="number" id="fuel_time_mins" value="30" min="0" max="59" class="form-input rounded-lg w-1/2 digital-readout" placeholder="Minutes">
+                            </div>
+                        <div class="flex flex-col">
+                            <label for="fuel_lap_time" class="text-sm font-medium mb-1 text-gray-400">Average Lap Time (Seconds)</label>
+                            <input type="number" id="fuel_lap_time" value="90.0" min="10" step="0.1" class="form-input rounded-lg digital-readout" placeholder="e.g., 90.5">
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col">
+                        <label for="fuel_per_lap_simple" class="text-sm font-medium mb-1 text-gray-400">Fuel Consumption (Liters/Lap)</label>
+                        <input type="number" id="fuel_per_lap_simple" value="3.5" min="0.1" step="0.1" class="form-input rounded-lg digital-readout" placeholder="e.g., 3.5">
+                    </div>
+                    <div class="flex flex-col">
+                        <label for="fuel_safety_laps" class="text-sm font-medium mb-1 text-gray-400">Safety Margin (Laps)</label>
+                        <input type="number" id="fuel_safety_laps" value="1" min="0" step="1" class="form-input rounded-lg digital-readout" placeholder="e.g., 1">
+                        <p class="text-xs text-gray-500 mt-1">Extra laps worth of fuel for caution.</p>
+                    </div>
+
+                    <button onclick="calculateSimpleFuel()" class="action-button w-full bg-racer-accent text-racer-light font-extrabold py-3 rounded-lg hover:bg-red-700 transition duration-300 mt-4 shadow-lg text-xl uppercase">Calculate Fuel Load</button>
+                </div>
+
+                <!-- Results -->
+                <div class="md:col-span-1 result-box p-6 rounded-xl flex flex-col items-center justify-center border-racer-accent">
+                    <p class="text-sm text-gray-400 digital-readout">TOTAL FUEL LOAD NEEDED</p>
+                    <p id="fuel-simple-result" class="text-5xl font-extrabold text-racer-accent mt-1 digital-readout">0.0 L</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Setup Advisor -->
+        <div id="setup" class="tool-content hidden">
+            <h2 class="text-2xl font-bold mb-6 text-racer-accent border-b border-racer-border pb-2">Setup Advisor</h2>
+            <p class="mb-6 text-gray-400">Select the car's balance issue and the corner phase where it occurs to get setup recommendations.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                <!-- Inputs -->
+                <div class="md:col-span-1 space-y-4 p-6 rounded-xl border border-racer-border bg-racer-secondary">
+                    <div class="flex flex-col">
+                        <label for="issue-balance" class="text-sm font-medium mb-1 text-gray-400">Car Balance Issue</label>
+                        <select id="issue-balance" class="form-input rounded-lg">
+                            <option value="">-- SELECT ISSUE --</option>
+                            <option value="Understeer">Understeer (Push)</option>
+                            <option value="Oversteer">Oversteer (Loose)</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col">
+                        <label for="issue-phase" class="text-sm font-medium mb-1 text-gray-400">Corner Phase</label>
+                        <select id="issue-phase" class="form-input rounded-lg">
+                            <option value="">-- SELECT PHASE --</option>
+                            <option value="Entry">Brake/Turn-in</option>
+                            <option value="Mid">Apex</option>
+                            <option value="Exit">On-throttle (Exiting)</option>
+                        </select>
+                    </div>
+
+                    <button onclick="getSetupAdvice()" class="action-button w-full bg-racer-accent text-racer-light font-extrabold py-3 rounded-lg hover:bg-red-700 transition duration-300 mt-4 shadow-lg text-xl uppercase">Get Advice</button>
+                </div>
+
+                <!-- Results -->
+                <div class="md:col-span-2 result-box p-6 rounded-xl space-y-3">
+                    <h3 class="text-xl font-semibold text-racer-accent mb-3">RECOMMENDATIONS</h3>
+                    <ul id="setup-advice-list" class="list-disc list-inside space-y-2 text-racer-light pl-4">
+                        <li class="text-gray-400">Please select an issue and a corner phase.</li>
+                    </ul>
+                    <p class="text-xs text-gray-500 mt-4">* General advice. Implement changes one at a time and test thoroughly.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Tab Management ---
+        document.addEventListener('DOMContentLoaded', () => {
+            calculateEndurance(); // Calculate initial state on load
+            showTab('strategy');
+        });
+
+        function showTab(tabId) {
+            // Hide all content and reset button styles
+            document.querySelectorAll('.tool-content').forEach(el => {
+                el.classList.add('hidden');
+            });
+            document.querySelectorAll('.tab-button').forEach(el => {
+                el.classList.remove('active');
+                el.classList.add('text-racer-light', 'hover:text-racer-accent');
+            });
+
+            // Show selected content and set active button style
+            document.getElementById(tabId).classList.remove('hidden');
+            const activeTabButton = document.getElementById(`tab-${tabId}`);
+            activeTabButton.classList.add('active');
+            activeTabButton.classList.remove('text-racer-light', 'hover:text-racer-accent');
+        }
+
+        // --- Formatting Helpers ---
+        function formatSecondsToTime(totalSeconds) {
+            if (isNaN(totalSeconds) || totalSeconds < 0) return '0:00:00';
+            const absSeconds = Math.floor(totalSeconds);
+            const hours = Math.floor(absSeconds / 3600);
+            const minutes = Math.floor((absSeconds % 3600) / 60);
+            const seconds = absSeconds % 60;
+            
+            const paddedMinutes = String(minutes).padStart(2, '0');
+            const paddedSeconds = String(seconds).padStart(2, '0');
+
+            return `${hours}:${paddedMinutes}:${paddedSeconds}`;
+        }
+        
+        // --- 1. Endurance Strategy Calculator Logic ---
+        function calculateEndurance() {
+            // 1. Get Base Inputs
+            const raceDurationHrs = parseFloat(document.getElementById('raceDurationHrs').value) || 0;
+            const raceDurationMins = parseFloat(document.getElementById('raceDurationMins').value) || 0;
+            const lapTime = parseFloat(document.getElementById('lapTime').value) || 0; // seconds
+            const fuelPerLap = parseFloat(document.getElementById('fuelPerLap').value) || 0; // L/lap
+            const tankCapacity = parseFloat(document.getElementById('tankCapacity').value) || 0; // L
+            const fuelSafetyLiters = parseFloat(document.getElementById('fuelSafetyLiters').value) || 0; // L
+
+            // 2. Get Constraint Inputs
+            const numDrivers = parseInt(document.getElementById('numDrivers').value) || 1;
+            const maxDriverStintMins = parseFloat(document.getElementById('maxDriverStintMins').value) || Infinity; // minutes
+            const maxTireStintLaps = parseInt(document.getElementById('maxTireStintLaps').value) || Infinity; // laps
+
+            const summaryDiv = document.getElementById('endurance-results-summary');
+            const detailsContainer = document.getElementById('pit-stop-details-container');
+            
+            // Helper for updating individual fields without changing the whole HTML structure
+            const updateResultField = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value;
+            };
+
+            if (lapTime <= 0 || fuelPerLap <= 0 || tankCapacity <= 0 || numDrivers <= 0) {
+                detailsContainer.innerHTML = '<p class="p-4 text-red-500 digital-readout">ERROR: Please enter valid positive values for Race Parameters and Drivers.</p>';
+                // Reset summary fields
+                updateResultField('res-totalTime', 'N/A'); updateResultField('res-totalLaps', 'N/A');
+                updateResultField('res-totalFuel', 'N/A'); updateResultField('res-maxStintLaps', 'N/A');
+                updateResultField('res-maxStintTime', 'N/A'); updateResultField('res-limitingFactor', 'ERROR');
+                updateResultField('res-pitStops', 'N/A'); updateResultField('res-totalStints', 'N/A');
+                updateResultField('res-stintsPerDriver', 'N/A');
+                document.getElementById('res-constraint-details').innerHTML = `<li>- Fuel Limit: N/A</li><li>- Driver Limit: N/A</li><li>- Tire Max: N/A</li>`;
+                return;
+            }
+
+            // --- A. Total Race Calculations ---
+            const totalRaceTimeSeconds = (raceDurationHrs * 3600) + (raceDurationMins * 60);
+            const totalLaps = Math.floor(totalRaceTimeSeconds / lapTime);
+            const totalFuelRequired = totalLaps * fuelPerLap;
+
+            // --- B. Determine Stint Constraints (in Laps) ---
+            const usableTankCapacity = tankCapacity - fuelSafetyLiters;
+            const fuelLimitLaps = Math.floor(usableTankCapacity / fuelPerLap);
+            const maxDriverStintSeconds = maxDriverStintMins * 60;
+            const driverLimitLaps = Math.floor(maxDriverStintSeconds / lapTime);
+
+            const constraints = [
+                { limit: fuelLimitLaps, name: "Fuel Limit" },
+                { limit: driverLimitLaps, name: "Driver Time" },
+                { limit: maxTireStintLaps, name: "Tire Life" }
+            ];
+
+            const validLimits = constraints.filter(c => c.limit > 0 && c.limit !== Infinity).map(c => c.limit);
+            
+            let maxStintLaps = totalLaps;
+            let limitingFactor = "RACE LENGTH";
+
+            if (validLimits.length > 0) {
+                maxStintLaps = Math.min(...validLimits);
+                const restrictiveConstraint = constraints.find(c => c.limit === maxStintLaps) || { name: 'Multiple' };
+                limitingFactor = restrictiveConstraint.name.toUpperCase();
+            }
+
+            // --- C. Pit Stop & Driver Calculations ---
+            let totalStints = 1;
+            let pitStops = 0;
+            
+            if (maxStintLaps > 0 && maxStintLaps < totalLaps) {
+                totalStints = Math.ceil(totalLaps / maxStintLaps);
+                pitStops = Math.max(0, totalStints - 1);
+            }
+            
+            const stintsPerDriver = totalStints / numDrivers;
+
+            // --- D. Generate Detailed Pit Stop Breakdown (FIXED: Added stintLaps to the object) ---
+            const pitStopDetails = [];
+            let currentDriverIndex = numDrivers - 1; // Start before Driver 1 so the first stint is Driver 1
+            let cumulativeLaps = 0;
+            
+            // Fuel calculation for each stop: Assume we always fill to cover maxStintLaps
+            const fuelNeededForStint = maxStintLaps * fuelPerLap;
+            // Cap the fill amount by usable tank capacity (should be equal if maxStintLaps is fuel limited)
+            const fuelToFill = fuelNeededForStint; 
+
+            for (let i = 1; i <= totalStints; i++) {
+                const driverOut = (currentDriverIndex % numDrivers) + 1;
+                const driverIn = (i < totalStints) ? ((currentDriverIndex + 1) % numDrivers) + 1 : 'FINISH';
+                
+                // The actual laps covered in this stint
+                const stintLaps = (i === totalStints) ? (totalLaps - cumulativeLaps) : maxStintLaps;
+                cumulativeLaps += stintLaps;
+
+                if (i <= pitStops) {
+                    // This is a pit stop
+                    pitStopDetails.push({
+                        stopNumber: i,
+                        stintLaps: stintLaps, // <-- Stint laps added
+                        lapEnd: cumulativeLaps,
+                        driverOut: `D${driverOut}`,
+                        driverIn: `D${driverIn}`,
+                        fuelToAdd: fuelToFill > 0 ? fuelToFill.toFixed(1) : '0.0',
+                        fuelAction: fuelToFill > 0 ? 'FULL TANK' : 'NO FUEL',
+                        tireAction: 'CHANGE TIRES',
+                        isDriverSwap: (driverIn !== `D${driverOut}`) ? 'YES' : 'NO',
+                    });
+                } else if (i === totalStints) {
+                    // The last stint ends at the race finish line (no pit stop)
+                    pitStopDetails.push({
+                        stopNumber: 'FINISH',
+                        stintLaps: stintLaps, // <-- Stint laps added
+                        lapEnd: totalLaps,
+                        driverOut: `D${driverOut}`,
+                        driverIn: '-',
+                        fuelToAdd: '-',
+                        fuelAction: '-',
+                        tireAction: '-',
+                        isDriverSwap: '-',
+                    });
+                }
+                
+                // Advance to the next driver/index for the next stint calculation
+                currentDriverIndex = (currentDriverIndex + 1) % numDrivers;
+            }
+
+            // --- E. Update Summary Results ---
+            
+            updateResultField('res-totalTime', formatSecondsToTime(totalRaceTimeSeconds));
+            updateResultField('res-totalLaps', totalLaps.toLocaleString('en-US'));
+            updateResultField('res-totalFuel', totalFuelRequired.toFixed(1) + ' L');
+            updateResultField('res-maxStintLaps', maxStintLaps.toLocaleString('en-US'));
+            updateResultField('res-maxStintTime', formatSecondsToTime(maxStintLaps * lapTime));
+            updateResultField('res-limitingFactor', limitingFactor);
+            updateResultField('res-pitStops', pitStops);
+            updateResultField('res-totalStints', totalStints);
+            updateResultField('res-stintsPerDriver', stintsPerDriver.toFixed(1));
+            
+            // Update constraint list details manually since it's embedded HTML
+            document.getElementById('res-constraint-details').innerHTML = `
+                <li class="digital-readout">- Fuel Limit: ${fuelLimitLaps} Laps</li>
+                <li class="digital-readout">- Driver Limit: ${driverLimitLaps} Laps</li>
+                <li class="digital-readout">- Tire Max: ${maxTireStintLaps !== Infinity ? maxTireStintLaps + ' Laps' : 'N/A'}</li>
+            `;
+
+            // Clear previous messages
+            document.querySelectorAll('.driver-message').forEach(el => el.remove());
+            if (stintsPerDriver > 1.0) {
+                 document.getElementById('endurance-results-summary').querySelector('.result-box:nth-child(3)').insertAdjacentHTML('beforeend', 
+                    `<p class="driver-message text-sm text-yellow-500 mt-1 digital-readout">CHECK: STINTS SHOULD BE DISTRIBUTED EVENLY.</p>`
+                );
+            }
+            
+            // --- F. Render Detailed Pit Stop Table ---
+            let tableHTML = `
+                <div class="hidden lg:grid grid-cols-6 pit-table-header p-2 text-xs font-bold uppercase tracking-wider border-b border-racer-accent">
+                    <div>Stop #</div>
+                    <div>Stint Laps</div>
+                    <div>Driver Out</div>
+                    <div>Driver In</div>
+                    <div>Fuel Liters</div>
+                    <div>Tire Action</div>
+                </div>
+            `;
+            
+            pitStopDetails.forEach(detail => {
+                const driverClass = detail.isDriverSwap === 'YES' ? 'text-racer-accent font-bold' : 'text-gray-300';
+                const isFinish = detail.stopNumber === 'FINISH';
+
+                if (isFinish) {
+                    tableHTML += `
+                        <div class="pit-table-row lg:grid lg:grid-cols-6 digital-readout">
+                            <div data-label="Event" class="lg:col-span-6 text-center py-2 bg-racer-accent/20 border-t border-racer-accent font-extrabold uppercase">RACE FINISH - ${detail.driverOut} DRIVER</div>
+                        </div>
+                    `;
+                } else {
+                     tableHTML += `
+                        <div class="pit-table-row lg:grid lg:grid-cols-6 digital-readout">
+                            <div data-label="Stop #">${detail.stopNumber}</div>
+                            <div data-label="Stint Laps">${detail.stintLaps.toLocaleString('en-US')}</div>
+                            <div data-label="Driver Out" class="text-gray-400">${detail.driverOut}</div>
+                            <div data-label="Driver In" class="${driverClass}">${detail.driverIn}</div>
+                            <div data-label="Fuel Liters" class="text-racer-accent">${detail.fuelToAdd} L</div>
+                            <div data-label="Tire Action" class="text-racer-light">${detail.tireAction}</div>
+                        </div>
+                    `;
+                }
+            });
+
+            detailsContainer.innerHTML = tableHTML;
+        }
+
+        // --- 2. Simple Fuel Calculator Logic ---
+        function toggleFuelMode(mode) {
+            if (mode === 'laps') {
+                document.getElementById('fuel_input_laps').classList.remove('hidden');
+                document.getElementById('fuel_input_time').classList.add('hidden');
+            } else { // mode === 'time'
+                document.getElementById('fuel_input_laps').classList.add('hidden');
+                document.getElementById('fuel_input_time').classList.remove('hidden');
+            }
+            // Clear result when switching modes
+            document.getElementById('fuel-simple-result').textContent = '0.0 L';
+        }
+
+        function calculateSimpleFuel() {
+            const mode = document.querySelector('input[name="fuel_mode"]:checked').value;
+            const fuelPerLap = parseFloat(document.getElementById('fuel_per_lap_simple').value) || 0;
+            const safetyLaps = parseFloat(document.getElementById('fuel_safety_laps').value) || 0;
+            let targetLaps = 0;
+
+            if (fuelPerLap <= 0) {
+                 document.getElementById('fuel-simple-result').textContent = 'INVALID RATE';
+                 return;
+            }
+
+            if (mode === 'laps') {
+                targetLaps = parseFloat(document.getElementById('fuel_laps').value) || 0;
+            } else { // mode === 'time'
+                const timeHrs = parseFloat(document.getElementById('fuel_time_hrs').value) || 0;
+                const timeMins = parseFloat(document.getElementById('fuel_time_mins').value) || 0;
+                const lapTime = parseFloat(document.getElementById('fuel_lap_time').value) || 0;
+                
+                if (lapTime <= 0) {
+                    document.getElementById('fuel-simple-result').textContent = 'INVALID LAP TIME';
+                    return;
+                }
+
+                const totalTimeSeconds = (timeHrs * 3600) + (timeMins * 60);
+                targetLaps = Math.ceil(totalTimeSeconds / lapTime);
+            }
+
+            if (targetLaps <= 0) {
+                document.getElementById('fuel-simple-result').textContent = 'INVALID TARGET';
+                return;
+            }
+
+            const requiredFuel = (targetLaps + safetyLaps) * fuelPerLap;
+            document.getElementById('fuel-simple-result').textContent = `${requiredFuel.toFixed(1)} L`;
+        }
+
+        // --- 3. Setup Advisor Logic (Same as before, with UI updates) ---
+        function getSetupAdvice() {
+            const balance = document.getElementById('issue-balance').value;
+            const phase = document.getElementById('issue-phase').value;
+            const resultsList = document.getElementById('setup-advice-list');
+            resultsList.innerHTML = ''; 
+
+            if (!balance || !phase) {
+                resultsList.innerHTML = `<li class="text-racer-accent">PLEASE SELECT BOTH ISSUE AND PHASE.</li>`;
+                return;
+            }
+
+            let advice = [];
+            const key = `${balance}-${phase}`;
+
+            // Setup Advice Mapping based on racing physics
+            switch (key) {
+                // --- UNDERSTEER FIXES (Need to increase front grip or decrease rear grip) ---
+                case 'Understeer-Entry':
+                    advice = [
+                        "Move Brake Bias **rearward** (helps rotation under braking).",
+                        "Decrease Front Anti-Roll Bar (ARB) stiffness (softer front).",
+                        "Decrease rear rebound damping (allows rear to settle faster).",
+                        "Increase Front Toe-Out (for aggressive turn-in).",
+                    ];
+                    break;
+                case 'Understeer-Mid':
+                    advice = [
+                        "Decrease Front Spring Rate / Increase Rear Spring Rate (increases rear mechanical grip).",
+                        "Increase Front Camber (more negative, increases lateral grip).",
+                        "Decrease Front Anti-Roll Bar (ARB) stiffness (softer front).",
+                        "Lower the Rear Ride Height (shifts aerodynamic balance forward).",
+                    ];
+                    break;
+                case 'Understeer-Exit':
+                    advice = [
+                        "Decrease Rear Spring Rate (softer rear for better traction).",
+                        "Decrease Differential Power Lock (makes the car less aggressive on throttle).",
+                        "Increase Rear Wing Angle (increases rear aero grip).",
+                        "Increase Rear Toe-In (improves stability, helps turn).",
+                    ];
+                    break;
+
+                // --- OVERSTEER FIXES (Need to decrease front grip or increase rear grip) ---
+                case 'Oversteer-Entry':
+                    advice = [
+                        "Move Brake Bias **forward** (stabilizes the rear under braking).",
+                        "Increase Front Anti-Roll Bar (ARB) stiffness (stiffer front).",
+                        "Increase front rebound damping (stabilizes the front end).",
+                        "Decrease Rear Camber (less negative).",
+                    ];
+                    break;
+                case 'Oversteer-Mid':
+                    advice = [
+                        "Increase Front Spring Rate / Decrease Rear Spring Rate (reduces rear mechanical grip).",
+                        "Decrease Rear Anti-Roll Bar (ARB) stiffness (softer rear).",
+                        "Decrease Front Camber (less negative).",
+                        "Increase Rear Ride Height (puts more load on rear tires).",
+                    ];
+                    break;
+                case 'Oversteer-Exit':
+                    advice = [
+                        "Increase Rear Spring Rate (stiffer rear to settle faster).",
+                        "Increase Differential Power Lock (can stabilize the rear under power, use carefully).",
+                        "Decrease Rear Wing Angle (reduces rear aero grip).",
+                        "Decrease Rear Toe-In (makes the car rotate less).",
+                    ];
+                    break;
+
+                default:
+                    advice = ["No specific advice for this combination. Try a different selection."];
+                    break;
+            }
+
+            advice.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'digital-readout';
+                li.innerHTML = item;
+                resultsList.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>

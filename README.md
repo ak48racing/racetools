@@ -1,4 +1,5 @@
-🏎️ Race Tools Console
+🏎️ **Race Tools Console**
+
 The Race Tools Console is a single-page web application designed to assist racing teams and sim racers in planning complex endurance strategies, managing fuel loads, and optimizing car setup for various racing formats.
 The application is built entirely in a single HTML file, making it highly portable and ideal for rapid deployment on platforms like GitHub Pages.
 

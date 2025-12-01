@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Race Tools by AK48</title>
+    <title>Race Tools Console</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -29,14 +29,13 @@
     <style>
         /* Custom CSS for Carbon Fiber and Digital Effects */
         .carbon-fiber-bg {
-            background-color: #1c1c1c; 
+            /* NEW: Improved Diagonal Weave Pattern for better Carbon Fiber look */
+            background-color: #121212;
             background-image: 
-                radial-gradient(circle at 100% 150%, #2b2b2b 24%, #1a1a1a 25%, #1a1a1a 28%, #2b2b2b 29%, #2b2b2b 36%, #1a1a1a 37%, #1a1a1a 40%, rgba(255,255,255,0) 41%),
-                radial-gradient(circle at 0 150%, #2b2b2b 24%, #1a1a1a 25%, #1a1a1a 28%, #2b2b2b 29%, #2b2b2b 36%, #1a1a1a 37%, #1a1a1a 40%, rgba(255,255,255,0) 41%),
-                radial-gradient(circle at 50% 100%, #1a1a1a 10%, #2b2b2b 23%, #333333 24%, #1a1a1a 25%, #1a1a1a 34%, #333333 35%, #2b2b2b 36%, #1a1a1a 40%),
-                radial-gradient(circle at 100% 50%, #333333 5%, #2b2b2b 10%, #1a1a1a 15%, #1a1a1a 20%),
-                radial-gradient(circle at 0 50%, #333333 5%, #2b2b2b 10%, #1a1a1a 15%, #1a1a1a 20%);
-            background-size: 50px 50px;
+                repeating-linear-gradient(45deg, #333 0, #333 1px, transparent 1px, transparent 50%),
+                repeating-linear-gradient(-45deg, #333 0, #333 1px, transparent 1px, transparent 50%);
+            background-size: 10px 10px;
+            opacity: 0.98;
         }
 
         .digital-readout {
@@ -183,9 +182,13 @@
 
     <div class="max-w-6xl mx-auto carbon-fiber-bg p-4 sm:p-10 rounded-2xl shadow-2xl border border-racer-accent/70">
         <header class="text-center mb-10">
-            <h1 class="text-4xl sm:text-5xl font-extrabold text-racer-light tracking-widest uppercase">
-                <span class="text-racer-accent">RACE</span> TOOLS
-            </h1>
+            <!-- Removed Logo - Centering the Title -->
+            <div class="mb-4">
+                <h1 class="text-4xl sm:text-5xl font-extrabold text-racer-light tracking-widest uppercase">
+                    <span class="text-racer-accent">RACE</span> TOOLS
+                </h1>
+            </div>
+            
             <!-- Dynamic Status Bar -->
             <p id="system-status" class="text-gray-500 mt-2 text-sm sm:text-base digital-readout">Initializing System...</p>
         </header>
@@ -285,7 +288,7 @@
                             <!-- Consumption -->
                             <div>
                                 <label for="fuelPerLap" class="text-sm font-medium mb-1 text-gray-400 input-group">
-                                    <svg class="w-4 h-4 text-racer-success" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c2.146-2.146 5.176-2.923 7.643-1.043 2.5 1.93 2.5 5.75 0 7.68-2.5 1.93-5.524 1.153-7.675-.972M12 8V3m0 5a9 9 0 00-9 9m9-9a9 9 0 019 9m-9 0V21"></path></svg>
+                                    <svg class="w-4 h-4 text-racer-success" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c2.146-2.146 5.176-2.923 7.643-1.043 2.5 1.93 2.5 5.75 0 7.68-2.5 1.93-5.524 1.153-7.675-.972M12 8V3m0 8a9 9 0 00-9 9m9-9a9 9 0 019 9m-9 0V21"></path></svg>
                                     Consumption (L/Lap)
                                 </label>
                                 <input type="number" id="fuelPerLap" value="3.5" min="0.1" step="0.1" class="form-input rounded-lg mt-1 digital-readout w-full" placeholder="3.5 L/Lap">
@@ -431,7 +434,7 @@
 
         <!-- 3. Setup Advisor -->
         <div id="setup" class="tool-content hidden pt-8">
-            <h2 class="text-3xl font-bold mb-6 text-racer-accent">Setup Advisor</h2>
+            <h2 class="text-3xl font-bold mb-6 text-racer-accent">Setup Advisor Module</h2>
             <p class="mb-6 text-gray-400">Select the car's balance issue and the corner phase where it occurs to get setup recommendations.</p>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -442,7 +445,7 @@
 
                     <div class="flex flex-col">
                         <label for="issue-balance" class="text-sm font-medium mb-1 text-gray-400 input-group">
-                             <svg class="w-4 h-4 text-racer-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 3h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                             <svg class="w-4 h-4 text-racer-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                             Car Balance Issue
                         </label>
                         <select id="issue-balance" class="form-input rounded-lg mt-1 w-full">
@@ -480,6 +483,11 @@
             </div>
         </div>
 
+        <!-- Footer for Attribution -->
+        <footer class="mt-10 pt-4 border-t border-racer-border text-center text-gray-500 text-sm">
+            Created with <span class="text-racer-accent">&hearts;</span> for the community by ak48
+        </footer>
+
     </div>
 
     <script>
@@ -494,7 +502,7 @@
         const TAB_TITLES = {
             'strategy': 'ENDURANCE STRATEGY MODULE',
             'fuel': 'FUEL CALCULATION MODULE',
-            'setup': 'SETUP ADVISOR MODULE'
+            'setup': 'SETUP ADVISOR MODULE' // Updated Title
         };
 
         function updateStatusBar(title) {

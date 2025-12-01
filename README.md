@@ -1,7 +1,8 @@
 🏎️ Race Control System: Advanced Strategy Console
 The Race Control System is a single-page web application designed to assist racing teams and sim racers in planning complex endurance strategies, managing fuel loads, and optimizing car setup for various racing formats.
 The application is built entirely in a single HTML file, making it highly portable and ideal for rapid deployment on platforms like GitHub Pages.
-✨ Features
+
+✨ Features 
 This console is split into three core modules to cover all aspects of race strategy:
 1. Endurance Strategy Planner
  * Optimal Stint Calculation: Determines the maximum safe stint length based on the most restrictive factor: Driver time limits, Tire wear limits, or Fuel capacity.
@@ -11,24 +12,7 @@ This console is split into three core modules to cover all aspects of race strat
  * Provides a quick tool to determine the required fuel load (in liters) for a specific number of target laps or a target time duration, including a user-defined safety margin.
 3. Setup Advisor
  * Offers instant recommendations for car setup adjustments (e.g., spring rates, anti-roll bars, brake bias) based on the balance issue (Understeer or Oversteer) and the specific corner phase (Entry, Mid, or Exit) where the issue occurs.
-🚀 Getting Started (GitHub Pages Deployment)
-Since this application is a single, self-contained HTML file (racing_tools.html), deployment is extremely simple.
-Prerequisites
-You only need a modern web browser.
-Installation & Deployment
- * Clone the Repository:
-   git clone [your-repo-link]
-cd race-control-system
 
- * Rename/Move the File:
-   Ensure the file is saved as index.html in the root of your repository for standard GitHub Pages deployment.
- * Configure GitHub Pages:
-   * Go to Settings in your repository.
-   * Navigate to Pages.
-   * Under "Build and deployment," ensure the source is set to Deploy from a branch and select your main branch (main or master) and the root / folder.
-   * Save changes. Your app will be live shortly at https://[your-username].github.io/[your-repo-name]/.
-🖥️ Usage
-Open the application in your browser.
 Planning a Race
  * Navigate to the Strategy Planner tab.
  * Input your Race Duration, Average Lap Time, and key constraint parameters (Max Driver Stint, Max Tire Stint, Fuel Consumption, etc.).

@@ -383,18 +383,23 @@
 
                 <!-- Inputs -->
                 <div class="md:col-span-2 space-y-6 p-6 rounded-xl border border-racer-border bg-racer-secondary">
-                    <!-- Toggle between Laps and Time -->
-                    <div class="flex items-center space-x-6 mb-4">
-                        <span class="text-gray-400 font-medium uppercase text-sm">CALCULATE FUEL BY:</span>
-                        <label class="inline-flex items-center cursor-pointer">
-                            <input type="radio" name="fuel_mode" value="laps" checked class="hidden peer" onchange="toggleFuelMode('laps')">
-                            <span class="ml-2 py-2 px-4 rounded-lg bg-racer-border text-gray-400 peer-checked:bg-racer-accent peer-checked:text-racer-light transition duration-200 font-semibold text-sm">LAPS</span>
-                        </label>
-                        <label class="inline-flex items-center cursor-pointer">
-                            <input type="radio" name="fuel_mode" value="time" class="hidden peer" onchange="toggleFuelMode('time')">
-                            <span class="ml-2 py-2 px-4 rounded-lg bg-racer-border text-gray-400 peer-checked:bg-racer-accent peer-checked:text-racer-light transition duration-200 font-semibold text-sm">TIME</span>
-                        </label>
+                    
+                    <!-- CORRECTED: Toggle between Laps and Time to ensure side-by-side fit -->
+                    <div class="mb-4">
+                        <span class="text-gray-400 font-medium uppercase text-sm block mb-2">CALCULATE FUEL BY:</span>
+                        <div class="flex space-x-4">
+                            <label class="inline-flex items-center cursor-pointer w-1/2">
+                                <input type="radio" name="fuel_mode" value="laps" checked class="hidden peer" onchange="toggleFuelMode('laps')">
+                                <span class="w-full text-center py-2 px-4 rounded-lg bg-racer-border text-gray-400 peer-checked:bg-racer-accent peer-checked:text-racer-light transition duration-200 font-semibold text-sm">LAPS</span>
+                            </label>
+                            <label class="inline-flex items-center cursor-pointer w-1/2">
+                                <input type="radio" name="fuel_mode" value="time" class="hidden peer" onchange="toggleFuelMode('time')">
+                                <span class="w-full text-center py-2 px-4 rounded-lg bg-racer-border text-gray-400 peer-checked:bg-racer-accent peer-checked:text-racer-light transition duration-200 font-semibold text-sm">TIME</span>
+                            </label>
+                        </div>
                     </div>
+                    <!-- END CORRECTION BLOCK -->
+
 
                     <div id="fuel_input_laps" class="space-y-4">
                         <label for="fuel_laps" class="block text-sm font-medium text-gray-400 input-group">Laps to Complete</label>
@@ -856,4 +861,6 @@
     </script>
 </body>
 </html>
+
+
 

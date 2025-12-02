@@ -293,25 +293,9 @@
                     </div>
                     
                     <div class="space-y-4">
-                         <h3 class="fieldset-header text-xl font-bold">Rolling / Tire Constraints</h3>
+                         <h3 class="fieldset-header text-xl font-bold">Tire Constraints</h3>
                          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <div>
-                                <label for="rollingDriveTimeHrs" class="text-sm font-medium mb-1 text-gray-400 input-group">
-                                    <svg class="w-4 h-4 text-racer-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                                    Max Drive in Rolling Window (Hrs)
-                                </label>
-                                <input type="number" id="rollingDriveTimeHrs" value="4" min="0" step="0.5" class="form-input rounded-lg mt-1 digital-readout w-full" placeholder="e.g., 4">
-                            </div>
-                            
-                            <div>
-                                <label for="rollingWindowHrs" class="text-sm font-medium mb-1 text-gray-400 input-group">
-                                    <svg class="w-4 h-4 text-racer-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    Rolling Window Length (Hrs)
-                                </label>
-                                <input type="number" id="rollingWindowHrs" value="6" min="1" step="0.5" class="form-input rounded-lg mt-1 digital-readout w-full" placeholder="e.g., 6">
-                            </div>
-
-                            <div>
+                            <div class="col-span-1">
                                 <label for="maxTireStintLaps" class="text-sm font-medium mb-1 text-gray-400 input-group">
                                     <svg class="w-4 h-4 text-racer-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19l6-6-6-6"></path></svg>
                                     Max Tire Stint (Laps)
@@ -661,9 +645,6 @@
             const maxTireStintLaps = parseInt(document.getElementById('maxTireStintLaps').value) || 0; // laps
             const pitStopTimeSecs = parseFloat(document.getElementById('pitStopTimeSecs').value) || 0; // seconds
 
-            const rollingDriveTimeHrs = parseFloat(document.getElementById('rollingDriveTimeHrs').value) || 0; // X hours
-            const rollingWindowHrs = parseFloat(document.getElementById('rollingWindowHrs').value) || 0; // Y hours
-
             const totalRaceTimeSeconds = (raceDurationHrs * 3600) + (raceDurationMins * 60);
             const totalLaps = Math.floor(totalRaceTimeSeconds / lapTime);
             
@@ -684,10 +665,6 @@
 
             if (lapTime <= 0 || fuelPerLap <= 0 || tankCapacity <= 0 || maxDriverStintMins <= 0 || maxTireStintLaps <= 0) {
                  errors.push("Please ensure all primary parameters (Lap Time, Fuel, Tank, Max Stint/Tire Laps) are positive.");
-            }
-            if (numDrivers * maxDriverStintMins < totalRaceTimeSeconds / 60) {
-                // Simplified check: Max drive time per driver * number of drivers must exceed race length
-                // This will be superseded by the more accurate TotalMaxDriveTime check below.
             }
             
             // Global Max Drive Time Check
@@ -726,21 +703,14 @@
             let driverTotalTime = new Array(numDrivers).fill(0); 
             // The race lap when the driver's mandatory rest ends
             let driverRestTimeEnds = new Array(numDrivers).fill(0); 
-            // Array of all stint end times (in seconds) for the rolling rule check
-            let stintEndTimes = []; 
-            // Array of which driver drove which stint, corresponding to stintEndTimes
-            let stintDriverIndexes = []; 
-
-            const rollingDriveTimeSeconds = rollingDriveTimeHrs * 3600;
-            const rollingWindowSeconds = rollingWindowHrs * 3600;
-
+            
 
             // --- D. Iterative Stint Planning Loop ---
             while (cumulativeLaps < totalLaps) {
                 const driverID = currentDriverIndex;
                 const driverName = drivers[driverID].name;
                 const lapsRemaining = totalLaps - cumulativeLaps;
-                const raceTimeElapsed = cumulativeLaps * lapTime;
+                
 
                 // 1. Calculate Stint Limits
                 
@@ -757,43 +727,6 @@
                 const maxTimeRemainingSecs = (drivers[driverID].maxTime * 60) - driverTotalTime[driverID];
                 const stintMaxTotalLimitLaps = Math.floor(maxTimeRemainingSecs / lapTime);
                 
-                // Limit E: Rolling Drive Time (New Feature - The most complex check)
-                let stintRollingLimitLaps = Infinity;
-
-                if (rollingDriveTimeSeconds > 0) {
-                    // Find the total drive time this driver has accumulated within the past Y hours (the rolling window)
-                    let accumulatedRollingTime = 0;
-                    
-                    // Iterate backwards through completed stints to find those within the rolling window
-                    for (let i = stintEndTimes.length - 1; i >= 0; i--) {
-                        if (stintDriverIndexes[i] === driverID) {
-                            const stintEndTime = stintEndTimes[i];
-                            
-                            // Calculate the start time of this previous stint
-                            // NOTE: We need to properly track all stint times (including pit time) to accurately calculate the window.
-                            // For this simplified model, we will use cumulative race time and assume a quick check.
-                            
-                            // We need the time window for the current check: [RaceTimeElapsed - RollingWindowSecs] to [RaceTimeElapsed]
-                            if (stintEndTime > raceTimeElapsed - rollingWindowSeconds) {
-                                // Find the duration of the stint itself (this is only possible if we track stint duration in seconds)
-                                // Since we don't track detailed stint duration in the loop, we use an approximation:
-                                // Look up the actual duration of this past stint (Requires a full data structure change, so we use approximation)
-                                // APPROXIMATION: Use the constant max stint time for the previous stint, assuming symmetry.
-                                accumulatedRollingTime += maxDriverStintSeconds; // Simplification
-                            } else {
-                                break; // Stints are old enough to be out of the window
-                            }
-                        }
-                    }
-
-                    const rollingTimeRemainingSecs = rollingDriveTimeSeconds - accumulatedRollingTime;
-                    stintRollingLimitLaps = Math.floor(rollingTimeRemainingSecs / lapTime);
-                    
-                    // Prevent the driver from starting if the remaining time is too low
-                    if (stintRollingLimitLaps <= 0) {
-                         stintRollingLimitLaps = 1; // Force a stop
-                    }
-                }
                 
                 // 4. Calculate Actual Stint Length (minimum of all current constraints)
                 let currentStintLaps = Math.min(
@@ -801,8 +734,7 @@
                     stintFuelLimitLaps, 
                     stintDriverLimitLaps, 
                     stintTireLimitLaps,
-                    stintMaxTotalLimitLaps,
-                    stintRollingLimitLaps // The rolling rule limit is now part of the decision
+                    stintMaxTotalLimitLaps
                 );
 
                 if (currentStintLaps <= 0) {
@@ -814,7 +746,7 @@
                 // --- E. Record Stint Details ---
                 
                 const isPitStop = (currentStintLaps < lapsRemaining);
-                const isDriverSwap = isPitStop && (numDrivers > 1) && (stintMaxTotalLimitLaps === currentStintLaps || stintRollingLimitLaps === currentStintLaps || currentStintLaps === driverLimitLaps);
+                const isDriverSwap = isPitStop && (numDrivers > 1) && (stintMaxTotalLimitLaps === currentStintLaps || currentStintLaps === driverLimitLaps);
                 const shouldChangeTires = isPitStop && (lapsOnTires + currentStintLaps >= maxTireStintLaps);
                 const tireAction = shouldChangeTires ? 'CHANGE TIRES' : (isPitStop ? 'KEEP TIRES' : '-');
                 const fuelToAdd = isPitStop ? usableTankCapacity.toFixed(1) : '0.0';
@@ -838,7 +770,7 @@
                 else if (currentStintLaps === stintDriverLimitLaps) limitingFactor = 'DRIVER MAX STINT';
                 else if (currentStintLaps === stintTireLimitLaps) limitingFactor = 'TIRES';
                 else if (currentStintLaps === stintMaxTotalLimitLaps) limitingFactor = `MAX TOTAL (${drivers[driverID].maxTime}m)`;
-                else if (currentStintLaps === stintRollingLimitLaps) limitingFactor = 'ROLLING TIME';
+                
 
                 // Record the pit stop
                 pitStopDetails.push({
@@ -854,9 +786,6 @@
                     limitingFactor: limitingFactor
                 });
                 
-                // Track stint times for the Rolling Rule check in the next iteration
-                stintEndTimes.push(cumulativeLaps * lapTime + stintTimeSecs + pitStopTimeSecs);
-                stintDriverIndexes.push(driverID);
                 
                 cumulativeLaps += currentStintLaps;
 

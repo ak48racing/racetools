@@ -658,15 +658,15 @@
                 // Fuel Fill: Fill to capacity (minus safety) if pitting, otherwise 0
                 const fuelToAdd = isPitStop ? (usableTankCapacity).toFixed(1) : '0.0';
 
-                // Next Driver
-                const nextDriverID = (isPitStop) ? ((currentDriverIndex + 1) % numDrivers) + 1 : 'FINISH';
+                // Next Driver Calculation (initial guess)
+                let nextDriverID = (isPitStop) ? ((currentDriverIndex + 1) % numDrivers) + 1 : 'FINISH';
                 
                 // Driver Rest Time Calculation (for the current driver OUT)
                 let driverRestInfo = '-';
                 if (isDriverSwap) {
-                    const nextDriverIndex = (currentDriverIndex + 1) % numDrivers;
+                    const driverOutIndex = currentDriverIndex;
                     const restEndLap = cumulativeLaps + currentStintLaps + Math.ceil(minDriverRestSeconds / lapTime);
-                    driverRestTimeEnds[currentDriverIndex] = restEndLap;
+                    driverRestTimeEnds[driverOutIndex] = restEndLap;
                     driverRestInfo = `Rest until L${restEndLap}`;
                 }
 
@@ -688,16 +688,34 @@
                 if (isPitStop) {
                     // Update variables for the next stint
                     currentStintNumber++;
-                    currentDriverIndex = (currentDriverIndex + 1) % numDrivers;
+                    
+                    // Start checking for the next available driver from the current index + 1
+                    let nextIndexCandidate = (currentDriverIndex + 1) % numDrivers; 
+                    let loopSafetyCount = 0; // NEW SAFETY COUNTER
+                    
+                    // Search for the first available driver
+                    while (cumulativeLaps < driverRestTimeEnds[nextIndexCandidate]) {
+                        nextIndexCandidate = (nextIndexCandidate + 1) % numDrivers;
+                        loopSafetyCount++;
+                        
+                        // FIX: Prevent infinite loop if constraints are impossible
+                        if (loopSafetyCount >= numDrivers) {
+                            // This means all drivers are still on mandatory rest.
+                            // The race cannot continue under these rules. Force exit.
+                            cumulativeLaps = totalLaps; 
+                            break; 
+                        }
+                    }
+
+                    currentDriverIndex = nextIndexCandidate;
                     lapsOnTires = shouldChangeTires ? 0 : lapsOnTires + currentStintLaps;
                     
-                    // Critical Check: If the newly selected driver is not rested, find the next available driver
-                    if (numDrivers > 1) {
-                         while (cumulativeLaps < driverRestTimeEnds[currentDriverIndex]) {
-                            // If the next planned driver is not rested, cycle to the next one
-                            currentDriverIndex = (currentDriverIndex + 1) % numDrivers;
-                         }
+                    // Update the Driver In field for the stop that was just recorded (since nextDriverID was a guess)
+                    const lastStop = pitStopDetails[pitStopDetails.length - 1];
+                    if (lastStop.isDriverSwap) {
+                        lastStop.driverIn = `D${currentDriverIndex + 1}`;
                     }
+
                 } else {
                     // Race finished
                     break;
@@ -727,7 +745,7 @@
             // --- F. Render Detailed Pit Stop Table ---
             let tableHTML = `
                 <div class="hidden lg:grid grid-cols-7 pit-table-header p-3 text-sm font-bold uppercase tracking-wider">
-                    <div class="col-span-1">Stop # (Laps)</div>
+                    <div class="col-span-1">Stint # (Laps)</div>
                     <div class="col-span-1">Driver Out</div>
                     <div class="col-span-1">Driver In</div>
                     <div class="col-span-1">Fuel (L)</div>

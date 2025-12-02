@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -481,10 +481,17 @@
     <script>
         // --- Global Tab Management ---
         document.addEventListener('DOMContentLoaded', () => {
-            // 1. Automatically switch to the first tab on load, updating the status text first.
+            // FIX IMPLEMENTED HERE: Separate the UI update from the heavy calculation
+            // to prevent the "Initializing System" status from hanging.
+
+            // 1. Select the default tab and update the status bar
             showTab('strategy', 'ENDURANCE STRATEGY MODULE');
-            // 2. Then, run the initial calculation.
-            calculateEndurance(); 
+            
+            // 2. Add a tiny delay (10ms) to ensure the status bar is rendered 
+            // before the potentially intensive calculateEndurance() loop starts.
+            setTimeout(() => {
+                calculateEndurance(); 
+            }, 10);
         });
         
         // Mapping tab IDs to friendly descriptions for the status bar

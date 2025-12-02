@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -445,7 +445,7 @@
                         <select id="issue-phase" class="form-input rounded-lg mt-1 w-full">
                             <option value="">-- SELECT PHASE --</option>
                             <option value="Entry">Brake/Turn-in</option>
-                            <option value="Mid">Apex</option>
+                            <option value="Mid">Apex (Constant Throttle)</option>
                             <option value="Exit">On-throttle (Exiting)</option>
                         </select>
                     </div>
@@ -456,8 +456,17 @@
                 <div class="result-card p-6 rounded-xl space-y-3 border-racer-success">
                     <h3 class="text-2xl font-semibold text-racer-success mb-3">RECOMMENDATIONS</h3>
                     <p id="setup-advice-status" class="text-sm text-gray-500">Select an issue and phase to view targeted setup changes.</p>
-                    <ul id="setup-advice-list" class="list-none space-y-3 text-racer-light pl-0">
-                        </ul>
+                    
+                    <div id="advice-primary" class="hidden">
+                        <h4 class="text-lg font-bold text-racer-accent border-b border-racer-border pb-1 mb-2">Primary Focus (High Impact)</h4>
+                        <ul id="setup-advice-list-primary" class="list-none space-y-3 text-racer-light pl-0"></ul>
+                    </div>
+                    
+                    <div id="advice-secondary" class="hidden pt-4 border-t border-racer-border">
+                        <h4 class="text-lg font-bold text-racer-success border-b border-racer-border pb-1 mb-2">Secondary Fixes (Fine Tuning)</h4>
+                        <ul id="setup-advice-list-secondary" class="list-none space-y-3 text-racer-light pl-0"></ul>
+                    </div>
+
                     <p class="text-xs text-gray-500 pt-4 border-t border-racer-border mt-4">* General advice. Implement changes **one at a time** and test thoroughly to isolate effects.</p>
                 </div>
             </div>
@@ -482,7 +491,7 @@
         const TAB_TITLES = {
             'strategy': 'ENDURANCE STRATEGY MODULE',
             'fuel': 'FUEL CALCULATION MODULE',
-            'setup': 'SETUP ADVISOR MODULE' // Updated Title
+            'setup': 'SETUP ADVISOR MODULE' 
         };
 
         function updateStatusBar(title) {
@@ -587,9 +596,6 @@
             const driverLimitLaps = Math.floor(maxDriverStintSeconds / lapTime);
             const minDriverRestSeconds = minDriverRestMins * 60;
 
-            // The maximum possible stint length, primarily used for calculation
-            const maxOptimalStintLaps = Math.min(fuelLimitLaps, driverLimitLaps, maxTireStintLaps);
-            
             // --- B. Strategy Generation (Iterative Stint Planning) ---
             
             let pitStopDetails = [];
@@ -614,28 +620,9 @@
                 const stintDriverLimitLaps = driverLimitLaps; 
                 
                 // Limit 3: Tire Life (Maximum laps remaining on the current set of tires)
-                // This limit is dynamic based on when they were last changed.
                 const stintTireLimitLaps = maxTireStintLaps - lapsOnTires; 
                 
-                // Limit 4: Driver Availability (Ensure the next driver is rested)
-                // This is only relevant if the current driver needs to swap.
-                // We calculate how many stints the *next* driver (driverIn) needs to wait.
-                const nextDriverIndex = (currentDriverIndex + 1) % numDrivers;
-                
-                // Check if the current driver is restricted by the **next** driver's rest time
-                const driverInAvailableLap = driverRestTimeEnds[nextDriverIndex];
-                let driverInWaitLaps = 0;
-
-                if (driverInAvailableLap > cumulativeLaps) {
-                    // The next driver is not available until driverInAvailableLap
-                    // This means we must extend the current stint until they are ready,
-                    // or, if that exceeds the current driver's max time, we have an issue.
-                    // For now, we simplify: assume maxStintLaps respects all limits. 
-                    // A proper implementation would pause the race or find an interim driver.
-                    // Given the constraint calculation, the only mandatory break is for the driver OUT, not the driver IN.
-                }
-
-                // 5. Calculate Actual Stint Length (minimum of all current constraints)
+                // 4. Calculate Actual Stint Length (minimum of all current constraints)
                 let currentStintLaps = Math.min(
                     lapsRemaining, 
                     stintFuelLimitLaps, 
@@ -652,31 +639,28 @@
                 if (currentStintLaps <= 0) break; // Race is over or stuck
 
                 // --- C. Record Stint Details ---
-                const actualStintTimeSeconds = currentStintLaps * lapTime;
-
+                
                 // Determine Pit Action
                 const isPitStop = (currentStintLaps < lapsRemaining);
                 const isDriverSwap = isPitStop && (numDrivers > 1); // Always swap if we stop and have >1 driver
 
-                // Fuel: The fuel needed to run the calculated stint (used for start fuel only)
-                const fuelNeededForStint = currentStintLaps * fuelPerLap;
-                
                 // Tire Change Condition: Change if the current stint length meets or exceeds the max limit, OR if the stop is mandatory for fuel/driver time.
                 const shouldChangeTires = isPitStop && (lapsOnTires + currentStintLaps >= maxTireStintLaps);
-                const tireAction = shouldChangeTires ? 'CHANGE TIRES' : 'KEEP TIRES';
+                const tireAction = shouldChangeTires ? 'CHANGE TIRES' : (isPitStop ? 'KEEP TIRES' : '-');
                 
                 // Fuel Fill: Fill to capacity (minus safety) if pitting, otherwise 0
                 const fuelToAdd = isPitStop ? (usableTankCapacity).toFixed(1) : '0.0';
 
                 // Next Driver
-                const nextDriverID = (currentStintNumber < totalLaps) ? ((currentDriverIndex + 1) % numDrivers) + 1 : 'FINISH';
+                const nextDriverID = (isPitStop) ? ((currentDriverIndex + 1) % numDrivers) + 1 : 'FINISH';
                 
                 // Driver Rest Time Calculation (for the current driver OUT)
                 let driverRestInfo = '-';
                 if (isDriverSwap) {
-                    const availableAfterRestLap = cumulativeLaps + currentStintLaps + Math.ceil(minDriverRestSeconds / lapTime);
-                    driverRestTimeEnds[currentDriverIndex] = availableAfterRestLap;
-                    driverRestInfo = `Rest until L${availableAfterRestLap} min.`;
+                    const nextDriverIndex = (currentDriverIndex + 1) % numDrivers;
+                    const restEndLap = cumulativeLaps + currentStintLaps + Math.ceil(minDriverRestSeconds / lapTime);
+                    driverRestTimeEnds[currentDriverIndex] = restEndLap;
+                    driverRestInfo = `Rest until L${restEndLap}`;
                 }
 
                 pitStopDetails.push({
@@ -699,6 +683,14 @@
                     currentStintNumber++;
                     currentDriverIndex = (currentDriverIndex + 1) % numDrivers;
                     lapsOnTires = shouldChangeTires ? 0 : lapsOnTires + currentStintLaps;
+                    
+                    // Critical Check: If the newly selected driver is not rested, find the next available driver
+                    if (numDrivers > 1) {
+                         while (cumulativeLaps < driverRestTimeEnds[currentDriverIndex]) {
+                            // If the next planned driver is not rested, cycle to the next one
+                            currentDriverIndex = (currentDriverIndex + 1) % numDrivers;
+                         }
+                    }
                 } else {
                     // Race finished
                     break;
@@ -826,90 +818,139 @@
             document.getElementById('fuel-simple-result').classList.remove('text-racer-accent');
         }
 
-        // --- 3. Setup Advisor Logic ---
+        // --- 3. Setup Advisor Logic (ENHANCED, Brake Pressure Removed) ---
         function getSetupAdvice() {
             const balance = document.getElementById('issue-balance').value;
             const phase = document.getElementById('issue-phase').value;
-            const resultsList = document.getElementById('setup-advice-list');
+            
+            const primaryList = document.getElementById('setup-advice-list-primary');
+            const secondaryList = document.getElementById('setup-advice-list-secondary');
+            
+            const primaryContainer = document.getElementById('advice-primary');
+            const secondaryContainer = document.getElementById('advice-secondary');
+
             const statusText = document.getElementById('setup-advice-status');
             
-            resultsList.innerHTML = ''; 
+            primaryList.innerHTML = ''; 
+            secondaryList.innerHTML = ''; 
+            primaryContainer.classList.add('hidden');
+            secondaryContainer.classList.add('hidden');
+
 
             if (!balance || !phase) {
                 statusText.textContent = 'Please select both an issue and a corner phase.';
+                statusText.classList.remove('hidden');
                 return;
             }
+            
+            statusText.classList.add('hidden');
+            primaryContainer.classList.remove('hidden');
+            secondaryContainer.classList.remove('hidden');
 
-            let advice = [];
+            let primaryAdvice = [];
+            let secondaryAdvice = [];
             const key = `${balance}-${phase}`;
 
-            // Setup Advice Mapping based on racing physics
+            // --- Setup Advice Mapping based on racing physics (ENHANCED, Brake Pressure Removed) ---
             switch (key) {
                 // --- UNDERSTEER FIXES (Need to increase front grip or decrease rear grip) ---
                 case 'Understeer-Entry':
-                    advice = [
-                        { field: "Brake Bias", action: "Move **rearward** (helps rotation under braking)." },
-                        { field: "Front ARB", action: "Decrease stiffness (softer front for more turn-in grip)." },
-                        { field: "Rear Rebound", action: "Decrease damping (allows rear to settle faster)." },
-                        { field: "Front Toe", action: "Increase Toe-Out (for aggressive initial rotation)." },
+                    primaryAdvice = [
+                        { category: "Brakes", field: "Brake Bias", action: "Move **rearward** (helps car rotation under braking)." },
+                        { category: "Mechanical", field: "Front ARB", action: "Decrease stiffness (softer front for more turn-in grip)." },
+                        { category: "Aero", field: "Front Wing", action: "Increase angle (if available) to pull the front down." },
+                    ];
+                    secondaryAdvice = [
+                        { category: "Alignment", field: "Front Toe", action: "Increase **Toe-Out** (for aggressive initial rotation)." },
+                        { category: "Damping", field: "Rear Rebound", action: "Decrease damping (allows rear to settle/lift faster, promoting rotation)." },
+                        { category: "Damping", field: "Front Bump", action: "Decrease damping (allows front to compress faster)." },
                     ];
                     break;
                 case 'Understeer-Mid':
-                    advice = [
-                        { field: "Front Springs", action: "Decrease Rate / Increase Rear Rate (more rear mechanical grip)." },
-                        { field: "Front Camber", action: "Increase Negative (increases lateral grip)." },
-                        { field: "Front ARB", action: "Decrease stiffness (softer front)." },
-                        { field: "Rear Ride Height", action: "Lower (shifts aerodynamic balance forward)." },
+                    primaryAdvice = [
+                        { category: "Aero", field: "Front Wing", action: "Increase angle relative to rear wing (increase front downforce)." },
+                        { category: "Mechanical", field: "Front Springs", action: "Decrease Rate (softer front to absorb bumps and increase grip)." },
+                        { category: "Mechanical", field: "Rear ARB", action: "Increase stiffness (stiffer rear to decrease rear grip slightly)." },
+                    ];
+                    secondaryAdvice = [
+                        { category: "Alignment", field: "Front Camber", action: "Increase **Negative** (increases lateral grip at the front)." },
+                        { category: "Mechanical", field: "Rear Ride Height", action: "Lower (shifts aerodynamic balance forward)." },
+                        { category: "Damping", field: "Front Rebound", action: "Increase damping (to keep the tire pressed down mid-corner)." },
                     ];
                     break;
                 case 'Understeer-Exit':
-                    advice = [
-                        { field: "Rear Springs", action: "Decrease Rate (softer rear for better traction)." },
-                        { field: "Diff Power Lock", action: "Decrease (makes car less aggressive on throttle)." },
-                        { field: "Rear Wing", action: "Increase Angle (increases rear aero grip)." },
-                        { field: "Rear Toe", action: "Increase Toe-In (improves stability, helps turn)." },
+                    primaryAdvice = [
+                        { category: "Differential", field: "Diff Power Lock", action: "Decrease (prevents rear wheels from locking together aggressively on throttle, increasing mechanical grip)." },
+                        { category: "Aero", field: "Rear Wing", action: "Decrease Angle / Increase Front Wing (decrease overall rear aero stability)." },
+                        { category: "Mechanical", field: "Rear Springs", action: "Increase Rate (stiffer rear to settle faster under throttle application)." },
+                    ];
+                    secondaryAdvice = [
+                         { category: "Alignment", field: "Rear Toe", action: "Increase **Toe-In** (improves stability, slightly helps rotation on power)." },
+                         { category: "Damping", field: "Rear Bump", action: "Decrease damping (allows rear to squat slightly more for traction)." },
+                         { category: "Mechanical", field: "Rear Ride Height", action: "Increase (can slightly help rear traction)." },
                     ];
                     break;
 
                 // --- OVERSTEER FIXES (Need to decrease front grip or increase rear grip) ---
                 case 'Oversteer-Entry':
-                    advice = [
-                        { field: "Brake Bias", action: "Move **forward** (stabilizes the rear under braking)." },
-                        { field: "Front ARB", action: "Increase stiffness (stiffer front)." },
-                        { field: "Front Rebound", action: "Increase damping (stabilizes the front end)." },
-                        { field: "Rear Camber", action: "Decrease Negative (less rear rotation)." },
+                    primaryAdvice = [
+                        { category: "Brakes", field: "Brake Bias", action: "Move **forward** (stabilizes the rear end under braking)." },
+                        { category: "Mechanical", field: "Rear ARB", action: "Decrease stiffness (softer rear for more mechanical grip)." },
+                        { category: "Damping", field: "Rear Bump", action: "Increase damping (slows rear compression, stabilizes it)." },
+                    ];
+                    secondaryAdvice = [
+                        { category: "Aero", field: "Rear Wing", action: "Increase angle (if available) to pin the rear down." },
+                        { category: "Alignment", field: "Front Toe", action: "Decrease **Toe-Out** or use Toe-In (less aggressive initial rotation)." },
+                        { category: "Damping", field: "Front Rebound", action: "Decrease damping (allows front to settle faster, reducing initial turn-in bite)." },
+                        { category: "Differential", field: "Diff Coast", action: "Decrease (less engine braking effect on the rear when coasting/braking)." },
                     ];
                     break;
                 case 'Oversteer-Mid':
-                    advice = [
-                        { field: "Rear Springs", action: "Increase Rate / Decrease Front Rate (reduces rear mechanical grip)." },
-                        { field: "Rear ARB", action: "Decrease stiffness (softer rear)." },
-                        { field: "Front Camber", action: "Decrease Negative (less front grip)." },
-                        { field: "Rear Ride Height", action: "Increase (puts more load on rear tires)." },
+                    primaryAdvice = [
+                        { category: "Mechanical", field: "Rear Springs", action: "Decrease Rate (softer rear for more mechanical grip and compliance)." },
+                        { category: "Mechanical", field: "Front ARB", action: "Increase stiffness (stiffer front to decrease front grip slightly)." },
+                        { category: "Aero", field: "Rear Wing", action: "Increase angle relative to front wing (increase rear downforce)." },
+                    ];
+                    secondaryAdvice = [
+                        { category: "Alignment", field: "Rear Camber", action: "Increase **Negative** (for more lateral mid-corner grip)." },
+                        { category: "Mechanical", field: "Front Ride Height", action: "Lower (shifts aerodynamic balance rearward)." },
+                        { category: "Damping", field: "Rear Fast Rebound", action: "Decrease damping (allows rear to handle bumps better without snapping)." },
                     ];
                     break;
                 case 'Oversteer-Exit':
-                    advice = [
-                        { field: "Rear Springs", action: "Increase Rate (stiffer rear to settle faster under power)." },
-                        { field: "Diff Power Lock", action: "Increase (can stabilize the rear under power, use carefully)." },
-                        { field: "Rear Wing", action: "Decrease Angle (reduces rear aero grip)." },
-                        { field: "Rear Toe", action: "Decrease Toe-In (makes the car rotate less)." },
+                    primaryAdvice = [
+                        { category: "Differential", field: "Diff Power Lock", action: "Increase (locks rear wheels more, stabilizing the car under power, use carefully for snap oversteer)." },
+                        { category: "Mechanical", field: "Rear Springs", action: "Decrease Rate (softer rear for better traction and less sudden weight transfer)." },
+                        { category: "Aero", field: "Rear Wing", action: "Increase Angle (increases rear aero grip for better traction)." },
+                    ];
+                    secondaryAdvice = [
+                        { category: "Alignment", field: "Rear Toe", action: "Decrease **Toe-In** or use Toe-Out (makes the car rotate less on exit)." },
+                        { category: "Damping", field: "Rear Rebound", action: "Increase damping (to keep rear tire pressed down on throttle lift)." },
+                        { category: "Damping", field: "Front Bump", action: "Increase damping (slows front compression, limiting grip transfer to front)." },
                     ];
                     break;
 
                 default:
-                    advice = [{ field: "System", action: "No specific advice for this combination. Try a different selection." }];
+                    primaryAdvice = [{ category: "System", field: "Status", action: "No specific advice for this combination." }];
                     break;
             }
             
-            statusText.textContent = `Targeting ${balance} during the ${phase} phase:`;
+            // --- Render the advice into the lists ---
+            const renderAdvice = (listElement, adviceArray) => {
+                adviceArray.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'digital-readout text-sm';
+                    li.innerHTML = `<span class="text-gray-400 font-medium">[${item.category}]</span> <span class="text-racer-accent font-semibold">${item.field}:</span> ${item.action}`;
+                    listElement.appendChild(li);
+                });
+            };
+            
+            renderAdvice(primaryList, primaryAdvice);
+            renderAdvice(secondaryList, secondaryAdvice);
 
-            advice.forEach(item => {
-                const li = document.createElement('li');
-                li.className = 'digital-readout text-sm';
-                li.innerHTML = `<span class="text-racer-accent font-semibold">${item.field}:</span> ${item.action}`;
-                resultsList.appendChild(li);
-            });
+
+            // Update the header text
+            document.getElementById('setup-advice-status').textContent = `Targeting ${balance} during the ${phase} phase:`;
         }
     </script>
 </body>

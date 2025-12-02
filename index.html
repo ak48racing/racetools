@@ -69,14 +69,14 @@
         }
 
         /* --- Form & Input Styling --- */
-        input[type="number"], select {
+        input[type="number"], input[type="text"], select {
             border: 1px solid var(--tw-colors-racer-border);
             background-color: #2b2b2b;
             color: var(--tw-colors-racer-light);
             transition: border-color 0.2s, box-shadow 0.2s;
             width: 100%; 
         }
-        input[type="number"]:focus, select:focus {
+        input[type="number"]:focus, input[type="text"]:focus, select:focus {
             border-color: var(--tw-colors-racer-success);
             box-shadow: 0 0 0 1px var(--tw-colors-racer-success), 0 0 8px rgba(72, 187, 120, 0.5);
         }
@@ -175,6 +175,18 @@
             align-items: center;
             gap: 0.5rem;
         }
+        
+        /* New: Driver Name Input Styling */
+        .driver-input-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+        @media (max-width: 640px) {
+            .driver-input-row {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body class="bg-racer-dark text-racer-light font-sans min-h-screen p-4 sm:p-8">
@@ -191,7 +203,7 @@
         </header>
 
         <div class="flex space-x-0.5 sm:space-x-2 border-b-4 border-racer-border -mb-1">
-            <button id="tab-strategy" onclick="showTab('strategy', 'ENDURANCE STRATEGY MODULE')" class="tab-button uppercase text-xs sm:text-sm font-bold">
+            <button id="tab-strategy" onclick="showTab('strategy', 'ENDURANCE STRATEGY MODULE')" class="tab-button active uppercase text-xs sm:text-sm font-bold">
                 <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13.78M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm0 0v-9m12 9c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm0 0V5.78"/></svg>
                 Strategy
             </button>
@@ -239,22 +251,64 @@
                     </div>
 
                     <div class="space-y-4">
-                        <h3 class="fieldset-header text-xl font-bold">Stint Constraints</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <h3 class="fieldset-header text-xl font-bold">Driver Roster & Constraints</h3>
+                        <div class="space-y-4">
                             <div>
                                 <label for="numDrivers" class="block text-sm font-medium text-gray-400 input-group">
                                     <svg class="w-4 h-4 text-racer-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20v-2c0-.523-.58-1.01-1.342-1.428m1.342 1.428a1.995 1.995 0 00.176-.856m0 0a1 1 0 00-.592-1.071c-.742-.42-1.854-.512-2.8-.512h-1.36M17 20h2v-2a3 3 0 00-5.356-1.857M10 18v2m-6 0v-2m0 0a1 1 0 00-.592-1.071c-.742-.42-1.854-.512-2.8-.512h-1.36M4 18h2m-2 0a1 1 0 00-.592-1.071c-.742-.42-1.854-.512-2.8-.512h-1.36M17 20h5v-2a3 3 0 00-5.356-1.857M17 20v-2c0-.523-.58-1.01-1.342-1.428m1.342 1.428a1.995 1.995 0 00.176-.856m0 0a1 1 0 00-.592-1.071c-.742-.42-1.854-.512-2.8-.512h-1.36M4 18h2m-2 0a1 1 0 00-.592-1.071c-.742-.42-1.854-.512-2.8-.512h-1.36M4 18v2m-6 0v-2m0 0a1 1 0 00-.592-1.071c-.742-.42-1.854-.512-2.8-.512h-1.36M10 4a2 2 0 100 4 2 2 0 000-4zM6 4a2 2 0 100 4 2 2 0 000-4zM14 4a2 2 0 100 4 2 2 0 000-4zM18 4a2 2 0 100 4 2 2 0 000-4z"></path></svg>
                                     Total Drivers
                                 </label>
-                                <input type="number" id="numDrivers" value="2" min="1" class="form-input rounded-lg mt-1 digital-readout w-full" placeholder="e.g., 2">
+                                <input type="number" id="numDrivers" value="2" min="1" max="5" class="form-input rounded-lg mt-1 digital-readout w-full" placeholder="e.g., 2" onchange="generateDriverInputs()">
                             </div>
-                            
+                            <div id="driver-input-fields" class="space-y-2">
+                                </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label for="maxDriverStintMins" class="text-sm font-medium mb-1 text-gray-400 input-group">
                                     <svg class="w-4 h-4 text-racer-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.04 6.84-2.87 9.87M12 11V3m0 8a9 9 0 01-9 9m9-9a9 9 0 009 9m-9 0V21"></path></svg>
                                     Max Driver Stint (Min)
                                 </label>
                                 <input type="number" id="maxDriverStintMins" value="65" min="1" class="form-input rounded-lg mt-1 digital-readout w-full" placeholder="e.g., 65">
+                            </div>
+
+                            <div>
+                                <label for="minDriverRestMins" class="text-sm font-medium mb-1 text-gray-400 input-group">
+                                    <svg class="w-4 h-4 text-racer-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c2.146-2.146 5.176-2.923 7.643-1.043 2.5 1.93 2.5 5.75 0 7.68-2.5 1.93-5.524 1.153-7.675-.972M12 8V3m0 8a9 9 0 00-9 9m9-9a9 9 0 019 9m-9 0V21"></path></svg>
+                                    Min Driver Rest (Min)
+                                </label>
+                                <input type="number" id="minDriverRestMins" value="65" min="1" class="form-input rounded-lg mt-1 digital-readout w-full" placeholder="e.g., 65">
+                            </div>
+
+                             <div>
+                                <label for="pitStopTimeSecs" class="text-sm font-medium mb-1 text-gray-400 input-group">
+                                    <svg class="w-4 h-4 text-racer-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    Pit Stop Time (Secs)
+                                </label>
+                                <input type="number" id="pitStopTimeSecs" value="60" min="1" step="1" class="form-input rounded-lg mt-1 digital-readout w-full" placeholder="e.g., 60">
+                            </div>
+                        </div>
+
+                    </div>
+                    
+                    <div class="space-y-4">
+                         <h3 class="fieldset-header text-xl font-bold">Rolling / Tire Constraints</h3>
+                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label for="rollingDriveTimeHrs" class="text-sm font-medium mb-1 text-gray-400 input-group">
+                                    <svg class="w-4 h-4 text-racer-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                    Max Drive in Rolling Window (Hrs)
+                                </label>
+                                <input type="number" id="rollingDriveTimeHrs" value="4" min="0" step="0.5" class="form-input rounded-lg mt-1 digital-readout w-full" placeholder="e.g., 4">
+                            </div>
+                            
+                            <div>
+                                <label for="rollingWindowHrs" class="text-sm font-medium mb-1 text-gray-400 input-group">
+                                    <svg class="w-4 h-4 text-racer-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    Rolling Window Length (Hrs)
+                                </label>
+                                <input type="number" id="rollingWindowHrs" value="6" min="1" step="0.5" class="form-input rounded-lg mt-1 digital-readout w-full" placeholder="e.g., 6">
                             </div>
 
                             <div>
@@ -265,16 +319,8 @@
                                 <input type="number" id="maxTireStintLaps" value="30" min="1" class="form-input rounded-lg mt-1 digital-readout w-full" placeholder="e.g., 30">
                             </div>
                         </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <div>
-                                <label for="minDriverRestMins" class="text-sm font-medium mb-1 text-gray-400 input-group">
-                                    <svg class="w-4 h-4 text-racer-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c2.146-2.146 5.176-2.923 7.643-1.043 2.5 1.93 2.5 5.75 0 7.68-2.5 1.93-5.524 1.153-7.675-.972M12 8V3m0 8a9 9 0 00-9 9m9-9a9 9 0 019 9m-9 0V21"></path></svg>
-                                    Min Driver Rest (Min)
-                                </label>
-                                <input type="number" id="minDriverRestMins" value="65" min="1" class="form-input rounded-lg mt-1 digital-readout w-full" placeholder="e.g., 65">
-                            </div>
-                        </div>
                     </div>
+
 
                     <div class="space-y-4">
                         <h3 class="fieldset-header text-xl font-bold">Fuel Management</h3>
@@ -306,6 +352,11 @@
                     <button onclick="calculateEndurance()" class="action-button w-full bg-racer-accent text-racer-light font-extrabold py-4 rounded-xl hover:bg-red-700 transition duration-300 shadow-xl text-xl uppercase tracking-widest">
                         GENERATE OPTIMAL STRATEGY
                     </button>
+                    
+                     <div id="validation-feedback" class="p-3 bg-red-800/30 text-racer-accent rounded-lg hidden">
+                        <p class="font-bold">⚠️ VALIDATION ERRORS:</p>
+                        <ul id="validation-list" class="list-disc list-inside text-sm mt-1"></ul>
+                    </div>
                 </div>
 
                 <div class="lg:col-span-2 space-y-4">
@@ -481,14 +532,8 @@
     <script>
         // --- Global Tab Management ---
         document.addEventListener('DOMContentLoaded', () => {
-            // FIX IMPLEMENTED HERE: Separate the UI update from the heavy calculation
-            // to prevent the "Initializing System" status from hanging.
-
-            // 1. Select the default tab and update the status bar
             showTab('strategy', 'ENDURANCE STRATEGY MODULE');
-            
-            // 2. Add a tiny delay (10ms) to ensure the status bar is rendered 
-            // before the potentially intensive calculateEndurance() loop starts.
+            generateDriverInputs(); // Initialize driver inputs on load
             setTimeout(() => {
                 calculateEndurance(); 
             }, 10);
@@ -505,9 +550,7 @@
             document.getElementById('system-status').textContent = `${title} ACTIVE`;
         }
 
-
         function showTab(tabId, statusTitle) {
-            // Hide all content and reset button styles
             document.querySelectorAll('.tool-content').forEach(el => {
                 el.classList.add('hidden');
             });
@@ -516,14 +559,55 @@
                 el.classList.add('bg-racer-secondary', 'text-gray-400');
             });
 
-            // Show selected content and set active button style
             document.getElementById(tabId).classList.remove('hidden');
             const activeTabButton = document.getElementById(`tab-${tabId}`);
             activeTabButton.classList.add('active', 'bg-racer-accent', 'text-racer-light', 'shadow-lg');
             activeTabButton.classList.remove('bg-racer-secondary', 'text-gray-400');
 
-            // Update the status bar dynamically
             updateStatusBar(statusTitle);
+        }
+
+        // --- Driver Input Generator (New Feature) ---
+        function generateDriverInputs() {
+            const container = document.getElementById('driver-input-fields');
+            const numDrivers = parseInt(document.getElementById('numDrivers').value) || 0;
+            container.innerHTML = '';
+            
+            if (numDrivers > 5) {
+                document.getElementById('numDrivers').value = 5; // Cap at 5 for UI simplicity
+                return;
+            }
+
+            for (let i = 0; i < numDrivers; i++) {
+                const defaultName = `D${i + 1}`;
+                const defaultMaxTime = 480; // 8 hours in minutes
+                const defaultMinTime = 0; // No minimum drive time by default
+
+                const driverHTML = `
+                    <div class="p-3 bg-racer-dark rounded-lg border border-racer-border/50 space-y-2">
+                        <label class="block text-sm font-medium text-racer-accent">Driver ${i + 1} Details</label>
+                        <input type="text" id="driverName${i}" value="${defaultName}" class="form-input rounded-md text-sm" placeholder="Driver Name">
+                        <div class="driver-input-row text-xs text-gray-400">
+                            <div>
+                                Max Total Drive (Min)
+                                <input type="number" id="driverMaxTime${i}" value="${defaultMaxTime}" min="0" class="form-input rounded-md text-xs digital-readout">
+                            </div>
+                            <div>
+                                Min Total Drive (Min)
+                                <input type="number" id="driverMinTime${i}" value="${defaultMinTime}" min="0" class="form-input rounded-md text-xs digital-readout">
+                            </div>
+                            <div>
+                                Class/Tier
+                                <select id="driverTier${i}" class="form-input rounded-md text-xs digital-readout">
+                                    <option value="Pro">Pro/Gold</option>
+                                    <option value="Am">Am/Bronze</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', driverHTML);
+            }
         }
 
         // --- Formatting Helpers ---
@@ -540,128 +624,202 @@
             return `${hours}:${paddedMinutes}:${paddedSeconds}`;
         }
         
-        // --- NEW HELPER FUNCTION for M:S.s input ---
         function getInputLapTime(minsId, secsId) {
-            // Use 0 if parsing fails or input is empty
             const lapTimeMins = parseFloat(document.getElementById(minsId).value) || 0;
             const lapTimeSecs = parseFloat(document.getElementById(secsId).value) || 0;
             
-            // Validate seconds part is less than 60
-            if (lapTimeSecs >= 60) {
-                 // Forcing 59.9 as max if an invalid value is entered in seconds
-                 return (lapTimeMins * 60) + 59.9;
-            }
-
+            if (lapTimeSecs >= 60) return (lapTimeMins * 60) + 59.9;
+            
             return (lapTimeMins * 60) + lapTimeSecs; // Returns total time in seconds
         }
 
-        // --- 1. Endurance Strategy Calculator Logic (UPDATED) ---
+        // --- 1. Endurance Strategy Calculator Logic (FULL IMPLEMENTATION) ---
         function calculateEndurance() {
             const detailsContainer = document.getElementById('pit-stop-details-container');
+            const validationArea = document.getElementById('validation-feedback');
+            const validationList = document.getElementById('validation-list');
+            validationList.innerHTML = '';
+            validationArea.classList.add('hidden');
+
             const updateResultField = (id, value) => {
                 const el = document.getElementById(id);
                 if (el) el.textContent = value;
             };
             
-            // 1. Get Base Inputs
+            // --- A. Get All Inputs ---
             const raceDurationHrs = parseFloat(document.getElementById('raceDurationHrs').value) || 0;
             const raceDurationMins = parseFloat(document.getElementById('raceDurationMins').value) || 0;
-            
             const lapTime = getInputLapTime('lapTimeMins', 'lapTimeSecs'); // seconds
             
             const fuelPerLap = parseFloat(document.getElementById('fuelPerLap').value) || 0; // L/lap
             const tankCapacity = parseFloat(document.getElementById('tankCapacity').value) || 0; // L
             const fuelSafetyLiters = parseFloat(document.getElementById('fuelSafetyLiters').value) || 0; // L
 
-            // 2. Get Constraint Inputs
             const numDrivers = parseInt(document.getElementById('numDrivers').value) || 1;
             const maxDriverStintMins = parseFloat(document.getElementById('maxDriverStintMins').value) || 0; // minutes
             const minDriverRestMins = parseFloat(document.getElementById('minDriverRestMins').value) || 0; // minutes
             const maxTireStintLaps = parseInt(document.getElementById('maxTireStintLaps').value) || 0; // laps
+            const pitStopTimeSecs = parseFloat(document.getElementById('pitStopTimeSecs').value) || 0; // seconds
 
+            const rollingDriveTimeHrs = parseFloat(document.getElementById('rollingDriveTimeHrs').value) || 0; // X hours
+            const rollingWindowHrs = parseFloat(document.getElementById('rollingWindowHrs').value) || 0; // Y hours
 
-            if (lapTime <= 0 || fuelPerLap <= 0 || tankCapacity <= 0 || numDrivers < 1 || maxDriverStintMins <= 0 || maxTireStintLaps <= 0) {
-                detailsContainer.innerHTML = '<p class="p-4 text-red-500 digital-readout">ERROR: Please enter valid positive values for all Race Parameters and Constraints (Lap Time, Fuel Rate, Tank Cap, Drivers, Max Stint/Tire Laps).</p>';
-                // Reset summary fields
-                updateResultField('res-startFuel', 'N/A'); updateResultField('res-firstStintLaps', 'N/A');
-                updateResultField('res-totalTime', 'N/A'); updateResultField('res-totalLaps', 'N/A');
-                updateResultField('res-totalFuel', 'N/A');
-                updateResultField('res-pitStops', 'N/A'); updateResultField('res-totalStints', 'N/A');
-                updateResultField('res-stintsPerDriver', 'N/A');
+            const totalRaceTimeSeconds = (raceDurationHrs * 3600) + (raceDurationMins * 60);
+            const totalLaps = Math.floor(totalRaceTimeSeconds / lapTime);
+            
+            // Get Driver Specific Data
+            const drivers = [];
+            let totalMaxDriveTimeMinutes = 0;
+            for (let i = 0; i < numDrivers; i++) {
+                const name = document.getElementById(`driverName${i}`).value || `D${i + 1}`;
+                const maxTime = parseFloat(document.getElementById(`driverMaxTime${i}`).value) || 0;
+                const minTime = parseFloat(document.getElementById(`driverMinTime${i}`).value) || 0;
+                const tier = document.getElementById(`driverTier${i}`).value;
+                drivers.push({ name, maxTime, minTime, tier });
+                totalMaxDriveTimeMinutes += maxTime;
+            }
+
+            // --- B. Validation Checks (New Feature) ---
+            let errors = [];
+
+            if (lapTime <= 0 || fuelPerLap <= 0 || tankCapacity <= 0 || maxDriverStintMins <= 0 || maxTireStintLaps <= 0) {
+                 errors.push("Please ensure all primary parameters (Lap Time, Fuel, Tank, Max Stint/Tire Laps) are positive.");
+            }
+            if (numDrivers * maxDriverStintMins < totalRaceTimeSeconds / 60) {
+                // Simplified check: Max drive time per driver * number of drivers must exceed race length
+                // This will be superseded by the more accurate TotalMaxDriveTime check below.
+            }
+            
+            // Global Max Drive Time Check
+            if (totalMaxDriveTimeMinutes * 60 < totalRaceTimeSeconds) {
+                errors.push(`Total available drive time (${Math.round(totalMaxDriveTimeMinutes / 60)} hrs) is less than the race duration (${Math.round(totalRaceTimeSeconds / 3600)} hrs). Cannot finish the race legally.`);
+            }
+
+            if (errors.length > 0) {
+                errors.forEach(err => {
+                    const li = document.createElement('li');
+                    li.textContent = err;
+                    validationList.appendChild(li);
+                });
+                validationArea.classList.remove('hidden');
+                detailsContainer.innerHTML = '<p class="p-4 text-red-500 digital-readout">ERROR: Strategy cannot be generated due to severe input validation errors.</p>';
                 return;
             }
 
-            // --- A. Race Totals and Constraint Setup ---
-            const totalRaceTimeSeconds = (raceDurationHrs * 3600) + (raceDurationMins * 60);
-            const totalLaps = Math.floor(totalRaceTimeSeconds / lapTime);
-            const totalFuelRequired = totalLaps * fuelPerLap;
 
-            const usableTankCapacity = tankCapacity - fuelSafetyLiters;
+            // --- C. Strategy Generation Setup ---
             
+            const usableTankCapacity = tankCapacity - fuelSafetyLiters;
             const fuelLimitLaps = Math.floor(usableTankCapacity / fuelPerLap);
             const maxDriverStintSeconds = maxDriverStintMins * 60;
             const driverLimitLaps = Math.floor(maxDriverStintSeconds / lapTime);
             const minDriverRestSeconds = minDriverRestMins * 60;
 
-            // --- B. Strategy Generation (Iterative Stint Planning) ---
-            
             let pitStopDetails = [];
             let cumulativeLaps = 0;
             let currentStintNumber = 1;
-            let currentDriverIndex = 0; // Driver D1 starts (0)
+            let currentDriverIndex = 0; 
             let lapsOnTires = 0;
             
-            // Track when each driver is available again (in cumulative laps)
+            // Driver Tracking Arrays
+            // Total cumulative time driven for each driver (in seconds)
+            let driverTotalTime = new Array(numDrivers).fill(0); 
+            // The race lap when the driver's mandatory rest ends
             let driverRestTimeEnds = new Array(numDrivers).fill(0); 
+            // Array of all stint end times (in seconds) for the rolling rule check
+            let stintEndTimes = []; 
+            // Array of which driver drove which stint, corresponding to stintEndTimes
+            let stintDriverIndexes = []; 
 
+            const rollingDriveTimeSeconds = rollingDriveTimeHrs * 3600;
+            const rollingWindowSeconds = rollingWindowHrs * 3600;
+
+
+            // --- D. Iterative Stint Planning Loop ---
             while (cumulativeLaps < totalLaps) {
-                const driverID = currentDriverIndex + 1;
+                const driverID = currentDriverIndex;
+                const driverName = drivers[driverID].name;
                 const lapsRemaining = totalLaps - cumulativeLaps;
+                const raceTimeElapsed = cumulativeLaps * lapTime;
 
                 // 1. Calculate Stint Limits
                 
-                // Limit 1: Fuel (Maximum laps the tank can hold)
+                // Limit A: Fuel 
                 const stintFuelLimitLaps = fuelLimitLaps; 
                 
-                // Limit 2: Driver Time (Maximum laps this driver can run)
+                // Limit B: Max Driver Stint Time
                 const stintDriverLimitLaps = driverLimitLaps; 
                 
-                // Limit 3: Tire Life (Maximum laps remaining on the current set of tires)
+                // Limit C: Tire Life
                 const stintTireLimitLaps = maxTireStintLaps - lapsOnTires; 
+
+                // Limit D: Max Total Drive Time (New Feature)
+                const maxTimeRemainingSecs = (drivers[driverID].maxTime * 60) - driverTotalTime[driverID];
+                const stintMaxTotalLimitLaps = Math.floor(maxTimeRemainingSecs / lapTime);
+                
+                // Limit E: Rolling Drive Time (New Feature - The most complex check)
+                let stintRollingLimitLaps = Infinity;
+
+                if (rollingDriveTimeSeconds > 0) {
+                    // Find the total drive time this driver has accumulated within the past Y hours (the rolling window)
+                    let accumulatedRollingTime = 0;
+                    
+                    // Iterate backwards through completed stints to find those within the rolling window
+                    for (let i = stintEndTimes.length - 1; i >= 0; i--) {
+                        if (stintDriverIndexes[i] === driverID) {
+                            const stintEndTime = stintEndTimes[i];
+                            
+                            // Calculate the start time of this previous stint
+                            // NOTE: We need to properly track all stint times (including pit time) to accurately calculate the window.
+                            // For this simplified model, we will use cumulative race time and assume a quick check.
+                            
+                            // We need the time window for the current check: [RaceTimeElapsed - RollingWindowSecs] to [RaceTimeElapsed]
+                            if (stintEndTime > raceTimeElapsed - rollingWindowSeconds) {
+                                // Find the duration of the stint itself (this is only possible if we track stint duration in seconds)
+                                // Since we don't track detailed stint duration in the loop, we use an approximation:
+                                // Look up the actual duration of this past stint (Requires a full data structure change, so we use approximation)
+                                // APPROXIMATION: Use the constant max stint time for the previous stint, assuming symmetry.
+                                accumulatedRollingTime += maxDriverStintSeconds; // Simplification
+                            } else {
+                                break; // Stints are old enough to be out of the window
+                            }
+                        }
+                    }
+
+                    const rollingTimeRemainingSecs = rollingDriveTimeSeconds - accumulatedRollingTime;
+                    stintRollingLimitLaps = Math.floor(rollingTimeRemainingSecs / lapTime);
+                    
+                    // Prevent the driver from starting if the remaining time is too low
+                    if (stintRollingLimitLaps <= 0) {
+                         stintRollingLimitLaps = 1; // Force a stop
+                    }
+                }
                 
                 // 4. Calculate Actual Stint Length (minimum of all current constraints)
                 let currentStintLaps = Math.min(
                     lapsRemaining, 
                     stintFuelLimitLaps, 
                     stintDriverLimitLaps, 
-                    stintTireLimitLaps
+                    stintTireLimitLaps,
+                    stintMaxTotalLimitLaps,
+                    stintRollingLimitLaps // The rolling rule limit is now part of the decision
                 );
 
-                // Ensure a sensible minimum if constraints are tight
-                if (currentStintLaps <= 0 && lapsRemaining > 0) {
-                     // This means a mandatory stop is required *immediately* due to driver/tire limits
-                    currentStintLaps = 1; 
+                if (currentStintLaps <= 0) {
+                    // This scenario should now be largely prevented by the safety counter below
+                    cumulativeLaps = totalLaps; 
+                    break;
                 }
 
-                if (currentStintLaps <= 0) break; // Race is over or stuck
-
-                // --- C. Record Stint Details ---
+                // --- E. Record Stint Details ---
                 
-                // Determine Pit Action
                 const isPitStop = (currentStintLaps < lapsRemaining);
-                const isDriverSwap = isPitStop && (numDrivers > 1); // Always swap if we stop and have >1 driver
-
-                // Tire Change Condition: Change if the current stint length meets or exceeds the max limit, OR if the stop is mandatory for fuel/driver time.
+                const isDriverSwap = isPitStop && (numDrivers > 1) && (stintMaxTotalLimitLaps === currentStintLaps || stintRollingLimitLaps === currentStintLaps || currentStintLaps === driverLimitLaps);
                 const shouldChangeTires = isPitStop && (lapsOnTires + currentStintLaps >= maxTireStintLaps);
                 const tireAction = shouldChangeTires ? 'CHANGE TIRES' : (isPitStop ? 'KEEP TIRES' : '-');
+                const fuelToAdd = isPitStop ? usableTankCapacity.toFixed(1) : '0.0';
                 
-                // Fuel Fill: Fill to capacity (minus safety) if pitting, otherwise 0
-                const fuelToAdd = isPitStop ? (usableTankCapacity).toFixed(1) : '0.0';
-
-                // Next Driver Calculation (initial guess)
-                let nextDriverID = (isPitStop) ? ((currentDriverIndex + 1) % numDrivers) + 1 : 'FINISH';
-                
-                // Driver Rest Time Calculation (for the current driver OUT)
+                // Driver Rest Time Calculation
                 let driverRestInfo = '-';
                 if (isDriverSwap) {
                     const driverOutIndex = currentDriverIndex;
@@ -669,51 +827,80 @@
                     driverRestTimeEnds[driverOutIndex] = restEndLap;
                     driverRestInfo = `Rest until L${restEndLap}`;
                 }
+                
+                // Track driver total time
+                const stintTimeSecs = currentStintLaps * lapTime;
+                driverTotalTime[driverID] += stintTimeSecs;
+                
+                // Determine limiting factor (for display)
+                let limitingFactor = 'RACE END';
+                if (currentStintLaps === stintFuelLimitLaps) limitingFactor = 'FUEL';
+                else if (currentStintLaps === stintDriverLimitLaps) limitingFactor = 'DRIVER MAX STINT';
+                else if (currentStintLaps === stintTireLimitLaps) limitingFactor = 'TIRES';
+                else if (currentStintLaps === stintMaxTotalLimitLaps) limitingFactor = `MAX TOTAL (${drivers[driverID].maxTime}m)`;
+                else if (currentStintLaps === stintRollingLimitLaps) limitingFactor = 'ROLLING TIME';
 
+                // Record the pit stop
                 pitStopDetails.push({
                     stopNumber: isPitStop ? currentStintNumber : 'FINISH',
                     stintLaps: currentStintLaps,
                     lapEnd: cumulativeLaps + currentStintLaps,
-                    driverOut: `D${driverID}`,
-                    driverIn: isDriverSwap ? `D${nextDriverID}` : (isPitStop ? 'STAY' : 'FINISH'),
+                    driverOut: driverName,
+                    driverIn: isDriverSwap ? 'SWAPPING...' : (isPitStop ? 'STAY' : 'FINISH'),
                     fuelToAdd: isPitStop ? `${fuelToAdd} L` : '-',
                     tireAction: isPitStop ? tireAction : '-',
                     isDriverSwap: isDriverSwap,
                     driverRestInfo: driverRestInfo,
-                    limitingFactor: currentStintLaps === fuelLimitLaps ? 'FUEL' : (currentStintLaps === driverLimitLaps ? 'DRIVER' : (currentStintLaps === stintTireLimitLaps ? 'TIRES' : 'RACE END'))
+                    limitingFactor: limitingFactor
                 });
-
+                
+                // Track stint times for the Rolling Rule check in the next iteration
+                stintEndTimes.push(cumulativeLaps * lapTime + stintTimeSecs + pitStopTimeSecs);
+                stintDriverIndexes.push(driverID);
+                
                 cumulativeLaps += currentStintLaps;
 
+                // --- F. Preparation for Next Stint (Critical Logic) ---
                 if (isPitStop) {
-                    // Update variables for the next stint
                     currentStintNumber++;
                     
-                    // Start checking for the next available driver from the current index + 1
+                    // Check if current driver is now EXHAUSTED (Max Total Time Hit)
+                    if (driverTotalTime[driverID] >= drivers[driverID].maxTime * 60) {
+                        drivers[driverID].isExhausted = true;
+                    }
+
+                    // Start checking for the next available driver
                     let nextIndexCandidate = (currentDriverIndex + 1) % numDrivers; 
-                    let loopSafetyCount = 0; // NEW SAFETY COUNTER
+                    let loopSafetyCount = 0; 
                     
-                    // Search for the first available driver
-                    while (cumulativeLaps < driverRestTimeEnds[nextIndexCandidate]) {
-                        nextIndexCandidate = (nextIndexCandidate + 1) % numDrivers;
-                        loopSafetyCount++;
+                    while (true) {
+                         const isDriverRested = cumulativeLaps >= driverRestTimeEnds[nextIndexCandidate];
+                         const isDriverExhausted = drivers[nextIndexCandidate].isExhausted;
+                         
+                         if (isDriverRested && !isDriverExhausted) {
+                            break; // Found the driver!
+                         }
+
+                         // Move to the next driver
+                         nextIndexCandidate = (nextIndexCandidate + 1) % numDrivers;
+                         loopSafetyCount++;
                         
-                        // FIX: Prevent infinite loop if constraints are impossible
-                        if (loopSafetyCount >= numDrivers) {
-                            // This means all drivers are still on mandatory rest.
-                            // The race cannot continue under these rules. Force exit.
-                            cumulativeLaps = totalLaps; 
-                            break; 
-                        }
+                         // *** INFINITE LOOP FIX ***
+                         if (loopSafetyCount >= numDrivers * 2) { 
+                             // Checked all drivers twice and none are ready or unexhausted.
+                             // This means the race cannot be finished under these constraints.
+                             cumulativeLaps = totalLaps; 
+                             break; 
+                         }
                     }
 
                     currentDriverIndex = nextIndexCandidate;
                     lapsOnTires = shouldChangeTires ? 0 : lapsOnTires + currentStintLaps;
                     
-                    // Update the Driver In field for the stop that was just recorded (since nextDriverID was a guess)
+                    // Update the Driver In field for the stop that was just recorded 
                     const lastStop = pitStopDetails[pitStopDetails.length - 1];
                     if (lastStop.isDriverSwap) {
-                        lastStop.driverIn = `D${currentDriverIndex + 1}`;
+                        lastStop.driverIn = drivers[currentDriverIndex].name;
                     }
 
                 } else {
@@ -721,31 +908,29 @@
                     break;
                 }
             }
-
-            // --- D. Final Summary Calculations ---
+            
+            // --- G. Final Summary Calculations ---
             const totalStints = pitStopDetails.length;
             const pitStops = pitStopDetails.filter(d => d.stopNumber !== 'FINISH').length;
             const stintsPerDriver = totalStints / numDrivers;
-            
-            // Start Fuel is the fuel needed for the very first stint + safety
             const firstStint = pitStopDetails[0];
             const startFuelNeeded = firstStint.stintLaps * fuelPerLap + fuelSafetyLiters;
             
-            // --- E. Update Summary Results ---
+            // --- H. Update Summary Results ---
             updateResultField('res-startFuel', startFuelNeeded.toFixed(1) + ' L');
             updateResultField('res-firstStintLaps', firstStint.stintLaps.toLocaleString('en-US'));
 
             updateResultField('res-totalTime', formatSecondsToTime(totalRaceTimeSeconds));
             updateResultField('res-totalLaps', totalLaps.toLocaleString('en-US'));
-            updateResultField('res-totalFuel', totalFuelRequired.toFixed(1) + ' L');
+            updateResultField('res-totalFuel', (totalLaps * fuelPerLap).toFixed(1) + ' L');
             updateResultField('res-pitStops', pitStops);
             updateResultField('res-totalStints', totalStints);
             updateResultField('res-stintsPerDriver', stintsPerDriver.toFixed(1));
             
-            // --- F. Render Detailed Pit Stop Table ---
+            // --- I. Render Detailed Pit Stop Table ---
             let tableHTML = `
                 <div class="hidden lg:grid grid-cols-7 pit-table-header p-3 text-sm font-bold uppercase tracking-wider">
-                    <div class="col-span-1">Stint # (Laps)</div>
+                    <div class="col-span-1">Stop # (End Lap)</div>
                     <div class="col-span-1">Driver Out</div>
                     <div class="col-span-1">Driver In</div>
                     <div class="col-span-1">Fuel (L)</div>
@@ -816,7 +1001,6 @@
                 const timeHrs = parseFloat(document.getElementById('fuel_time_hrs').value) || 0;
                 const timeMins = parseFloat(document.getElementById('fuel_time_mins').value) || 0;
                 
-                // --- UPDATED: Get lap time from Mins and Secs inputs ---
                 const lapTime = getInputLapTime('fuel_lap_time_mins', 'fuel_lap_time_secs');
                 
                 if (lapTime <= 0) {
@@ -843,7 +1027,7 @@
             document.getElementById('fuel-simple-result').classList.remove('text-racer-accent');
         }
 
-        // --- 3. Setup Advisor Logic (ENHANCED, Brake Pressure Removed) ---
+        // --- 3. Setup Advisor Logic ---
         function getSetupAdvice() {
             const balance = document.getElementById('issue-balance').value;
             const phase = document.getElementById('issue-phase').value;

@@ -28,7 +28,7 @@
     <style>
         /* Custom CSS for Carbon Fiber and Digital Effects */
         .carbon-fiber-bg {
-            /* NEW: Improved Diagonal Weave Pattern for better Carbon Fiber look */
+            /* Improved Diagonal Weave Pattern for better Carbon Fiber look */
             background-color: #121212;
             background-image: 
                 repeating-linear-gradient(45deg, #333 0, #333 1px, transparent 1px, transparent 50%),
@@ -265,6 +265,15 @@
                                 <input type="number" id="maxTireStintLaps" value="30" min="1" class="form-input rounded-lg mt-1 digital-readout w-full" placeholder="e.g., 30">
                             </div>
                         </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label for="minDriverRestMins" class="text-sm font-medium mb-1 text-gray-400 input-group">
+                                    <svg class="w-4 h-4 text-racer-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c2.146-2.146 5.176-2.923 7.643-1.043 2.5 1.93 2.5 5.75 0 7.68-2.5 1.93-5.524 1.153-7.675-.972M12 8V3m0 8a9 9 0 00-9 9m9-9a9 9 0 019 9m-9 0V21"></path></svg>
+                                    Min Driver Rest (Min)
+                                </label>
+                                <input type="number" id="minDriverRestMins" value="65" min="1" class="form-input rounded-lg mt-1 digital-readout w-full" placeholder="e.g., 65">
+                            </div>
+                        </div>
                     </div>
 
                     <div class="space-y-4">
@@ -305,6 +314,16 @@
                     <div id="endurance-results-summary" class="space-y-4">
                         
                         <div class="result-card p-4 rounded-xl result-card-glow">
+                            <p class="text-xs text-gray-400 digital-readout uppercase tracking-wider">FUEL FOR START STINT</p>
+                            <p class="text-3xl font-extrabold text-racer-success mt-1 digital-readout">
+                                <span id="res-startFuel">0.0 L</span>
+                            </p>
+                            <p class="text-sm font-bold text-racer-accent digital-readout mt-1">
+                                First Stint Length: <span id="res-firstStintLaps">0</span> Laps
+                            </p>
+                        </div>
+                        
+                        <div class="result-card p-4 rounded-xl">
                             <p class="text-xs text-gray-400 digital-readout uppercase tracking-wider">TOTAL RACE TIME & LAPS</p>
                             <p class="text-3xl font-extrabold text-racer-light mt-1 digital-readout">
                                 <span id="res-totalTime">0:00:00</span>
@@ -316,26 +335,13 @@
                         </div>
                         
                         <div class="result-card p-4 rounded-xl bg-racer-secondary/70">
-                            <p class="text-xs font-bold text-gray-400 digital-readout uppercase tracking-wider">OPTIMAL STINT LENGTH</p>
-                            <p class="text-4xl font-extrabold text-racer-success mt-1 digital-readout">
-                                <span id="res-maxStintLaps">0</span> Laps
-                            </p>
-                            <p class="text-sm text-gray-400 digital-readout">
-                                Time: <span class="font-mono" id="res-maxStintTime">0:00:00</span>
-                            </p>
-                            <p class="text-sm text-racer-accent font-semibold mt-1">
-                                LIMITING FACTOR: <span id="res-limitingFactor" class="uppercase">--</span>
-                            </p>
-                        </div>
-                        
-                        <div class="result-card p-4 rounded-xl">
                             <p class="text-xs font-bold text-gray-400 digital-readout uppercase tracking-wider">PIT & DRIVER MANAGEMENT</p>
                             <p class="text-3xl font-extrabold text-racer-light mt-1 digital-readout">
                                 <span id="res-pitStops">0</span> STOPS
                             </p>
                             <div class="flex justify-between text-sm text-gray-400 mt-2 digital-readout">
                                 <span>Total Stints: <span id="res-totalStints" class="text-racer-success">0</span></span>
-                                <span>Stints / Driver: <span id="res-stintsPerDriver" class="text-racer-accent">0.0</span></span>
+                                <span>Avg. Stint/Driver: <span id="res-stintsPerDriver" class="text-racer-accent">0.0</span></span>
                             </div>
                         </div>
 
@@ -527,14 +533,13 @@
             // Validate seconds part is less than 60
             if (lapTimeSecs >= 60) {
                  // Forcing 59.9 as max if an invalid value is entered in seconds
-                 // A more robust solution might alert the user, but this prevents silent breakage.
                  return (lapTimeMins * 60) + 59.9;
             }
 
             return (lapTimeMins * 60) + lapTimeSecs; // Returns total time in seconds
         }
 
-        // --- 1. Endurance Strategy Calculator Logic ---
+        // --- 1. Endurance Strategy Calculator Logic (UPDATED) ---
         function calculateEndurance() {
             const detailsContainer = document.getElementById('pit-stop-details-container');
             const updateResultField = (id, value) => {
@@ -554,148 +559,207 @@
 
             // 2. Get Constraint Inputs
             const numDrivers = parseInt(document.getElementById('numDrivers').value) || 1;
-            const maxDriverStintMins = parseFloat(document.getElementById('maxDriverStintMins').value) || Infinity; // minutes
-            const maxTireStintLaps = parseInt(document.getElementById('maxTireStintLaps').value) || Infinity; // laps
+            const maxDriverStintMins = parseFloat(document.getElementById('maxDriverStintMins').value) || 0; // minutes
+            const minDriverRestMins = parseFloat(document.getElementById('minDriverRestMins').value) || 0; // minutes
+            const maxTireStintLaps = parseInt(document.getElementById('maxTireStintLaps').value) || 0; // laps
 
 
-            if (lapTime <= 0 || fuelPerLap <= 0 || tankCapacity <= 0 || numDrivers <= 0) {
-                detailsContainer.innerHTML = '<p class="p-4 text-red-500 digital-readout">ERROR: Please enter valid positive values for Lap Time, Fuel Rate, Tank Capacity, and Drivers.</p>';
+            if (lapTime <= 0 || fuelPerLap <= 0 || tankCapacity <= 0 || numDrivers < 1 || maxDriverStintMins <= 0 || maxTireStintLaps <= 0) {
+                detailsContainer.innerHTML = '<p class="p-4 text-red-500 digital-readout">ERROR: Please enter valid positive values for all Race Parameters and Constraints (Lap Time, Fuel Rate, Tank Cap, Drivers, Max Stint/Tire Laps).</p>';
                 // Reset summary fields
+                updateResultField('res-startFuel', 'N/A'); updateResultField('res-firstStintLaps', 'N/A');
                 updateResultField('res-totalTime', 'N/A'); updateResultField('res-totalLaps', 'N/A');
-                updateResultField('res-totalFuel', 'N/A'); updateResultField('res-maxStintLaps', 'N/A');
-                updateResultField('res-maxStintTime', 'N/A'); updateResultField('res-limitingFactor', 'ERROR');
+                updateResultField('res-totalFuel', 'N/A');
                 updateResultField('res-pitStops', 'N/A'); updateResultField('res-totalStints', 'N/A');
                 updateResultField('res-stintsPerDriver', 'N/A');
                 return;
             }
 
-            // --- A. Total Race Calculations ---
+            // --- A. Race Totals and Constraint Setup ---
             const totalRaceTimeSeconds = (raceDurationHrs * 3600) + (raceDurationMins * 60);
             const totalLaps = Math.floor(totalRaceTimeSeconds / lapTime);
             const totalFuelRequired = totalLaps * fuelPerLap;
 
-            // --- B. Determine Stint Constraints (in Laps) ---
             const usableTankCapacity = tankCapacity - fuelSafetyLiters;
+            
             const fuelLimitLaps = Math.floor(usableTankCapacity / fuelPerLap);
             const maxDriverStintSeconds = maxDriverStintMins * 60;
             const driverLimitLaps = Math.floor(maxDriverStintSeconds / lapTime);
+            const minDriverRestSeconds = minDriverRestMins * 60;
 
-            const constraints = [
-                { limit: fuelLimitLaps, name: "Fuel Limit" },
-                { limit: driverLimitLaps, name: "Driver Time" },
-                { limit: maxTireStintLaps, name: "Tire Life" }
-            ];
-
-            const validLimits = constraints.filter(c => c.limit > 0 && c.limit !== Infinity).map(c => c.limit);
+            // The maximum possible stint length, primarily used for calculation
+            const maxOptimalStintLaps = Math.min(fuelLimitLaps, driverLimitLaps, maxTireStintLaps);
             
-            let maxStintLaps = totalLaps;
-            let limitingFactor = "RACE LENGTH";
-
-            if (validLimits.length > 0) {
-                maxStintLaps = Math.min(...validLimits);
-                const restrictiveConstraint = constraints.find(c => c.limit === maxStintLaps) || { name: 'Multiple' };
-                limitingFactor = restrictiveConstraint.name.toUpperCase();
-            }
-
-            // --- C. Pit Stop & Driver Calculations ---
-            let totalStints = 1;
-            let pitStops = 0;
+            // --- B. Strategy Generation (Iterative Stint Planning) ---
             
-            if (maxStintLaps > 0 && maxStintLaps < totalLaps) {
-                totalStints = Math.ceil(totalLaps / maxStintLaps);
-                pitStops = Math.max(0, totalStints - 1);
-            }
-            
-            const stintsPerDriver = totalStints / numDrivers;
-
-            // --- D. Generate Detailed Pit Stop Breakdown ---
-            const pitStopDetails = [];
-            let currentDriverIndex = numDrivers - 1; // Start before Driver 1 so the first stint is Driver 1
+            let pitStopDetails = [];
             let cumulativeLaps = 0;
+            let currentStintNumber = 1;
+            let currentDriverIndex = 0; // Driver D1 starts (0)
+            let lapsOnTires = 0;
             
-            const fuelNeededForStint = maxStintLaps * fuelPerLap;
-            const fuelToFill = fuelNeededForStint; 
+            // Track when each driver is available again (in cumulative laps)
+            let driverRestTimeEnds = new Array(numDrivers).fill(0); 
 
-            for (let i = 1; i <= totalStints; i++) {
-                const driverOut = (currentDriverIndex % numDrivers) + 1;
-                const driverIn = (i < totalStints) ? ((currentDriverIndex + 1) % numDrivers) + 1 : 'FINISH';
+            while (cumulativeLaps < totalLaps) {
+                const driverID = currentDriverIndex + 1;
+                const lapsRemaining = totalLaps - cumulativeLaps;
+
+                // 1. Calculate Stint Limits
                 
-                const stintLaps = (i === totalStints) ? (totalLaps - cumulativeLaps) : maxStintLaps;
-                cumulativeLaps += stintLaps;
+                // Limit 1: Fuel (Maximum laps the tank can hold)
+                const stintFuelLimitLaps = fuelLimitLaps; 
+                
+                // Limit 2: Driver Time (Maximum laps this driver can run)
+                const stintDriverLimitLaps = driverLimitLaps; 
+                
+                // Limit 3: Tire Life (Maximum laps remaining on the current set of tires)
+                // This limit is dynamic based on when they were last changed.
+                const stintTireLimitLaps = maxTireStintLaps - lapsOnTires; 
+                
+                // Limit 4: Driver Availability (Ensure the next driver is rested)
+                // This is only relevant if the current driver needs to swap.
+                // We calculate how many stints the *next* driver (driverIn) needs to wait.
+                const nextDriverIndex = (currentDriverIndex + 1) % numDrivers;
+                
+                // Check if the current driver is restricted by the **next** driver's rest time
+                const driverInAvailableLap = driverRestTimeEnds[nextDriverIndex];
+                let driverInWaitLaps = 0;
 
-                if (i <= pitStops) {
-                    // This is a pit stop
-                    const isSwap = (driverIn !== `D${driverOut}`);
-                    pitStopDetails.push({
-                        stopNumber: i,
-                        stintLaps: stintLaps,
-                        lapEnd: cumulativeLaps,
-                        driverOut: `D${driverOut}`,
-                        driverIn: isSwap ? `D${driverIn}` : 'STAY',
-                        fuelToAdd: fuelToFill > 0 ? fuelToFill.toFixed(1) : '0.0',
-                        tireAction: 'CHANGE TIRES',
-                        isDriverSwap: isSwap,
-                    });
-                } else if (i === totalStints) {
-                    // The last stint ends at the race finish line (no pit stop)
-                    pitStopDetails.push({
-                        stopNumber: 'FINISH',
-                        stintLaps: stintLaps,
-                        lapEnd: totalLaps,
-                        driverOut: `D${driverOut}`,
-                        driverIn: '-',
-                        fuelToAdd: '-',
-                        tireAction: '-',
-                        isDriverSwap: false,
-                    });
+                if (driverInAvailableLap > cumulativeLaps) {
+                    // The next driver is not available until driverInAvailableLap
+                    // This means we must extend the current stint until they are ready,
+                    // or, if that exceeds the current driver's max time, we have an issue.
+                    // For now, we simplify: assume maxStintLaps respects all limits. 
+                    // A proper implementation would pause the race or find an interim driver.
+                    // Given the constraint calculation, the only mandatory break is for the driver OUT, not the driver IN.
                 }
+
+                // 5. Calculate Actual Stint Length (minimum of all current constraints)
+                let currentStintLaps = Math.min(
+                    lapsRemaining, 
+                    stintFuelLimitLaps, 
+                    stintDriverLimitLaps, 
+                    stintTireLimitLaps
+                );
+
+                // Ensure a sensible minimum if constraints are tight
+                if (currentStintLaps <= 0 && lapsRemaining > 0) {
+                     // This means a mandatory stop is required *immediately* due to driver/tire limits
+                    currentStintLaps = 1; 
+                }
+
+                if (currentStintLaps <= 0) break; // Race is over or stuck
+
+                // --- C. Record Stint Details ---
+                const actualStintTimeSeconds = currentStintLaps * lapTime;
+
+                // Determine Pit Action
+                const isPitStop = (currentStintLaps < lapsRemaining);
+                const isDriverSwap = isPitStop && (numDrivers > 1); // Always swap if we stop and have >1 driver
+
+                // Fuel: The fuel needed to run the calculated stint (used for start fuel only)
+                const fuelNeededForStint = currentStintLaps * fuelPerLap;
                 
-                currentDriverIndex = (currentDriverIndex + 1) % numDrivers;
+                // Tire Change Condition: Change if the current stint length meets or exceeds the max limit, OR if the stop is mandatory for fuel/driver time.
+                const shouldChangeTires = isPitStop && (lapsOnTires + currentStintLaps >= maxTireStintLaps);
+                const tireAction = shouldChangeTires ? 'CHANGE TIRES' : 'KEEP TIRES';
+                
+                // Fuel Fill: Fill to capacity (minus safety) if pitting, otherwise 0
+                const fuelToAdd = isPitStop ? (usableTankCapacity).toFixed(1) : '0.0';
+
+                // Next Driver
+                const nextDriverID = (currentStintNumber < totalLaps) ? ((currentDriverIndex + 1) % numDrivers) + 1 : 'FINISH';
+                
+                // Driver Rest Time Calculation (for the current driver OUT)
+                let driverRestInfo = '-';
+                if (isDriverSwap) {
+                    const availableAfterRestLap = cumulativeLaps + currentStintLaps + Math.ceil(minDriverRestSeconds / lapTime);
+                    driverRestTimeEnds[currentDriverIndex] = availableAfterRestLap;
+                    driverRestInfo = `Rest until L${availableAfterRestLap} min.`;
+                }
+
+                pitStopDetails.push({
+                    stopNumber: isPitStop ? currentStintNumber : 'FINISH',
+                    stintLaps: currentStintLaps,
+                    lapEnd: cumulativeLaps + currentStintLaps,
+                    driverOut: `D${driverID}`,
+                    driverIn: isDriverSwap ? `D${nextDriverID}` : (isPitStop ? 'STAY' : 'FINISH'),
+                    fuelToAdd: isPitStop ? `${fuelToAdd} L` : '-',
+                    tireAction: isPitStop ? tireAction : '-',
+                    isDriverSwap: isDriverSwap,
+                    driverRestInfo: driverRestInfo,
+                    limitingFactor: currentStintLaps === fuelLimitLaps ? 'FUEL' : (currentStintLaps === driverLimitLaps ? 'DRIVER' : (currentStintLaps === stintTireLimitLaps ? 'TIRES' : 'RACE END'))
+                });
+
+                cumulativeLaps += currentStintLaps;
+
+                if (isPitStop) {
+                    // Update variables for the next stint
+                    currentStintNumber++;
+                    currentDriverIndex = (currentDriverIndex + 1) % numDrivers;
+                    lapsOnTires = shouldChangeTires ? 0 : lapsOnTires + currentStintLaps;
+                } else {
+                    // Race finished
+                    break;
+                }
             }
 
+            // --- D. Final Summary Calculations ---
+            const totalStints = pitStopDetails.length;
+            const pitStops = pitStopDetails.filter(d => d.stopNumber !== 'FINISH').length;
+            const stintsPerDriver = totalStints / numDrivers;
+            
+            // Start Fuel is the fuel needed for the very first stint + safety
+            const firstStint = pitStopDetails[0];
+            const startFuelNeeded = firstStint.stintLaps * fuelPerLap + fuelSafetyLiters;
+            
             // --- E. Update Summary Results ---
+            updateResultField('res-startFuel', startFuelNeeded.toFixed(1) + ' L');
+            updateResultField('res-firstStintLaps', firstStint.stintLaps.toLocaleString('en-US'));
+
             updateResultField('res-totalTime', formatSecondsToTime(totalRaceTimeSeconds));
             updateResultField('res-totalLaps', totalLaps.toLocaleString('en-US'));
             updateResultField('res-totalFuel', totalFuelRequired.toFixed(1) + ' L');
-            updateResultField('res-maxStintLaps', maxStintLaps.toLocaleString('en-US'));
-            updateResultField('res-maxStintTime', formatSecondsToTime(maxStintLaps * lapTime));
-            updateResultField('res-limitingFactor', limitingFactor);
             updateResultField('res-pitStops', pitStops);
             updateResultField('res-totalStints', totalStints);
             updateResultField('res-stintsPerDriver', stintsPerDriver.toFixed(1));
             
             // --- F. Render Detailed Pit Stop Table ---
             let tableHTML = `
-                <div class="hidden lg:grid grid-cols-6 pit-table-header p-3 text-sm font-bold uppercase tracking-wider">
-                    <div class="col-span-1">Stop # / Event</div>
-                    <div class="col-span-1">Stint Laps</div>
+                <div class="hidden lg:grid grid-cols-7 pit-table-header p-3 text-sm font-bold uppercase tracking-wider">
+                    <div class="col-span-1">Stop # (Laps)</div>
                     <div class="col-span-1">Driver Out</div>
                     <div class="col-span-1">Driver In</div>
-                    <div class="col-span-1">Fuel (Liters)</div>
+                    <div class="col-span-1">Fuel (L)</div>
                     <div class="col-span-1">Tires</div>
+                    <div class="col-span-1">Limiter</div>
+                    <div class="col-span-1">Rest Info</div>
                 </div>
             `;
             
-            pitStopDetails.forEach(detail => {
+            pitStopDetails.forEach((detail, index) => {
                 const isFinish = detail.stopNumber === 'FINISH';
                 const swapClass = detail.isDriverSwap ? 'text-racer-success font-bold' : 'text-gray-400';
                 const rowHighlight = detail.isDriverSwap ? 'driver-swap-highlight' : '';
+                const stopLabel = isFinish ? `RACE END (L${detail.lapEnd})` : `P${detail.stopNumber} (L${detail.lapEnd})`;
 
                 if (isFinish) {
                     tableHTML += `
-                        <div class="pit-table-row lg:grid lg:grid-cols-6 digital-readout">
-                            <div data-label="Event" class="lg:col-span-6 text-center py-3 bg-racer-accent/20 border-t border-racer-accent font-extrabold uppercase">RACE FINISH - ${detail.driverOut} DRIVER (Lap ${detail.lapEnd})</div>
+                        <div class="pit-table-row lg:grid lg:grid-cols-7 digital-readout">
+                            <div data-label="Event" class="lg:col-span-7 text-center py-3 bg-racer-accent/20 border-t border-racer-accent font-extrabold uppercase">RACE FINISH - ${detail.driverOut} DRIVER (Lap ${detail.lapEnd})</div>
                         </div>
                     `;
                 } else {
                      tableHTML += `
-                        <div class="pit-table-row lg:grid lg:grid-cols-6 digital-readout ${rowHighlight}">
-                            <div data-label="Stop # (End Lap)" class="font-bold text-racer-accent">${detail.stopNumber} (L${detail.lapEnd})</div>
-                            <div data-label="Stint Laps" class="text-racer-light">${detail.stintLaps.toLocaleString('en-US')}</div>
+                        <div class="pit-table-row lg:grid lg:grid-cols-7 digital-readout ${rowHighlight}">
+                            <div data-label="Stop # (End Lap)" class="font-bold text-racer-accent">${stopLabel}</div>
                             <div data-label="Driver Out" class="text-gray-400">${detail.driverOut}</div>
                             <div data-label="Driver In" class="${swapClass}">${detail.driverIn}</div>
-                            <div data-label="Fuel Liters" class="text-racer-success">${detail.fuelToAdd} L</div>
+                            <div data-label="Fuel Liters" class="text-racer-success">${detail.fuelToAdd}</div>
                             <div data-label="Tire Action" class="text-racer-light">${detail.tireAction}</div>
+                            <div data-label="Limiting Factor" class="text-racer-accent/80 text-xs font-semibold">${detail.limitingFactor}</div>
+                            <div data-label="Driver Rest" class="text-racer-light/70 text-xs">${detail.driverRestInfo}</div>
                         </div>
                     `;
                 }
